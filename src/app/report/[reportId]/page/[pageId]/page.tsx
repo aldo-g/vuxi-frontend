@@ -611,9 +611,11 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                              section.rawContent && (
                               <div>
                                 <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Detailed Observations</h5>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-sm max-w-none text-slate-700 leading-relaxed">
-                                  {section.rawContent}
-                                </ReactMarkdown>
+                                <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {section.rawContent}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                             )}
                           </div>
