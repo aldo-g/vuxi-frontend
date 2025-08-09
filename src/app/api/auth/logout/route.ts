@@ -1,22 +1,22 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  // The URL to redirect to after logout
-  const redirectURL = new URL('/', request.url);
+/**
+ * Limited deployment placeholder:
+ * - No redirect; just clears the auth cookie and returns a JSON message.
+ * - Avoids any dependency on NextRequest.
+ */
+export async function GET(_request: Request) {
+  const res = NextResponse.json(
+    { message: "Logged out (limited version)." },
+    { status: 200 }
+  );
 
-  // Create the redirect response
-  const response = NextResponse.redirect(redirectURL, {
-    // Use status 303 to instruct the browser to use a GET request for the new location
-    status: 303, 
-  });
-
-  // Clear the authentication cookie
-  response.cookies.set('token', '', {
+  // Clear the authentication cookie safely
+  res.cookies.set("token", "", {
     httpOnly: true,
-    path: '/',
+    path: "/",
     maxAge: 0,
   });
 
-  return response;
+  return res;
 }
