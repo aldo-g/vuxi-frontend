@@ -50,7 +50,7 @@ function VuxiLandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200">
       {/* Closed Beta Modal */}
       <Dialog open={showBetaModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-lg" hideCloseButton>
+        <DialogContent className="sm:max-w-lg [&>button[aria-label='Close']]:hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-600">
               <Info className="h-5 w-5" />
