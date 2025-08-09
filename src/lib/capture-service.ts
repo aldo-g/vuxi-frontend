@@ -44,8 +44,16 @@ export class CaptureService {
 
       console.log('🚀 Starting database transaction...');
 
+      // Define the transaction return type
+      type TransactionResult = {
+        projectId: number;
+        analysisRunId: number;
+        analyzedPageIds: number[];
+        screenshotIds: number[];
+      };
+
       // Start a transaction to ensure data consistency
-      const result = await database.$transaction(async (tx) => {
+      const result = await database.$transaction(async (tx: { project: { upsert: (arg0: { where: { userId_baseUrl: { userId: number; baseUrl: string; }; }; update: { orgName: string; orgPurpose: string; }; create: { userId: number; name: string; baseUrl: string; orgName: string; orgPurpose: string; }; }) => any; }; analysisRun: { create: (arg0: { data: { projectId: any; captureJobId: string; status: string; progress: { stage: string; percentage: number; message: string; }; }; }) => any; }; analyzedPage: { create: (arg0: { data: { runId: any; url: string; pageAim: string; }; }) => any; }; screenshot: { create: (arg0: { data: { analyzedPageId: any; url: string; filename: string | null; storageUrl: string; success: true; viewport: string; duration_ms: number | null; timestamp: Date | null; error: string | null; }; }) => any; }; }): Promise<TransactionResult> => {
         console.log('📋 Transaction started, upserting project...');
 
         // 1. Create or find existing project
@@ -157,17 +165,24 @@ export class CaptureService {
       });
 
       console.log('🎉 FINAL SUCCESS:', result);
+
+      // Type assertion to ensure result is not null (transaction guarantees this)
+      const transactionResult = result as unknown as TransactionResult;
+
       return {
         success: true,
-        ...result
+        projectId: transactionResult.projectId,
+        analysisRunId: transactionResult.analysisRunId,
+        analyzedPageIds: transactionResult.analyzedPageIds,
+        screenshotIds: transactionResult.screenshotIds,
       };
 
     } catch (error) {
       console.error('❌ FATAL ERROR in CaptureService.saveCaptureData:', error);
       console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
       });
       return {
         success: false,

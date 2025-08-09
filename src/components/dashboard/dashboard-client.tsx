@@ -264,7 +264,9 @@ export function DashboardClient({ projects = [] }: DashboardClientProps) {
                             {status}
                           </span>
                         </div>
-                        <FormattedDate dateString={project.createdAt} className="text-sm text-slate-500 min-w-fit" />
+                        <span className="text-sm text-slate-500 min-w-fit">
+                          <FormattedDate dateString={project.createdAt} />
+                        </span>
                       </div>
                     </div>
                   );

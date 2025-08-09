@@ -26,8 +26,5 @@ export * from './forms';
 // Dashboard Components
 export * from './dashboard';
 
-// UI Components (re-export from ui directory)
-export * from './ui';
-
 // Legacy exports (will be removed after migration)
 export { DashboardClient } from './dashboard/dashboard-client';

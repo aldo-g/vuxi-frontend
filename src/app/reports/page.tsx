@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { List, ChevronRight, FileText, AlertCircle } from "lucide-react";
 import { FormattedDate } from "@/components/common";
-import type { ReportManifestItem } from "@/types"; // Added type import
+import type { ReportManifestItem } from "@/types";
 
 const fetchReportManifest = async (): Promise<ReportManifestItem[]> => {
   const response = await fetch("/all_analysis_runs_manifest.json");

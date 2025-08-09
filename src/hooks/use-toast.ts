@@ -45,7 +45,7 @@ let dispatch: (action: any) => void = (action) => {
   });
 };
 
-function reducer(state: typeof memoryState, action: any) {
+function reducer(state: typeof memoryState, action: any): typeof memoryState {
   switch (action.type) {
     case "ADD_TOAST":
       return {
@@ -69,6 +69,7 @@ function reducer(state: typeof memoryState, action: any) {
           type: "REMOVE_TOAST",
           toastId: toastId,
         });
+        return state; // ← EXPLICIT RETURN ADDED
       } else {
         return {
           ...state,
@@ -78,8 +79,8 @@ function reducer(state: typeof memoryState, action: any) {
           })),
         };
       }
-      return state;
     }
+    
     case "REMOVE_TOAST":
       if (action.toastId === undefined) {
         return {
@@ -91,6 +92,9 @@ function reducer(state: typeof memoryState, action: any) {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
       };
+      
+    default:
+      return state; // ← DEFAULT CASE ADDED
   }
 }
 

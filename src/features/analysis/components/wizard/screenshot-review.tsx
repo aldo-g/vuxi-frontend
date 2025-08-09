@@ -25,7 +25,7 @@ export function ScreenshotReview({
   const [modalStartIndex, setModalStartIndex] = useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingScreenshot, setEditingScreenshot] = useState<Screenshot | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | undefined>(undefined);
   const { toast } = useToast();
 
   const handleScreenshotClick = (index: number) => {
@@ -69,13 +69,13 @@ export function ScreenshotReview({
 
   const handleAddClick = () => {
     setEditingScreenshot(null);
-    setEditingIndex(null);
+    setEditingIndex(undefined);
     setIsEditModalOpen(true);
   };
 
   const handleSaveScreenshot = (newScreenshot: Screenshot) => {
-    if (editingIndex !== null) {
-      // Edit existing screenshot
+    if (typeof editingIndex === 'number') {
+      // Edit existing screenshot - type guard ensures editingIndex is a number
       const updatedScreenshots = [...screenshots];
       updatedScreenshots[editingIndex] = newScreenshot;
       updateAnalysisData({ screenshots: updatedScreenshots });
@@ -97,7 +97,7 @@ export function ScreenshotReview({
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditingScreenshot(null);
-    setEditingIndex(null);
+    setEditingIndex(undefined);
   };
 
   return (

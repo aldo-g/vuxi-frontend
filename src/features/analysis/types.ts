@@ -1,3 +1,4 @@
+import { AnalysisData, AnalysisJob, CaptureJob, Screenshot } from '@/types';
 
 // Re-export common types that are used across features
 export type {
@@ -6,10 +7,17 @@ export type {
   ScreenshotData,
   CaptureJob,
   AnalysisJob,
-  WizardStep
+  SaveCaptureRequest,
+  SaveCaptureResponse
 } from '@/types';
 
 // Analysis-specific types
+export interface WizardStep {
+  id: number;
+  title: string;
+  icon: React.ComponentType<any>;
+}
+
 export interface WizardState {
   currentStep: number;
   analysisData: AnalysisData;
@@ -53,5 +61,5 @@ export interface ScreenshotReviewProps {
   onStartAnalysis: () => void;
   onBack: () => void;
   isAnalyzing: boolean;
-  updateAnalysisData: (updates: Partial<AnalysisData>) => void; // Added this line
+  updateAnalysisData: (updates: Partial<AnalysisData>) => void;
 }

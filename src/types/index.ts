@@ -13,6 +13,8 @@
  * - Documents data structure contracts
  */
 
+import { ReactNode } from "react";
+
 export interface User {
   id: number;
   Name: string;
@@ -247,4 +249,18 @@ export interface SaveCaptureResponse {
   analyzedPageIds: number[];
   screenshotIds: number[];
   error?: string;
+}
+
+export interface ReportManifestItem {
+  name: ReactNode;
+  description: string;
+  date: string;
+  id: string;
+  organization_name: string;
+  generated_at: string;
+  overall_score: number;
+  total_pages_analyzed: number;
+  status?: string;
+  website_url?: string;
+  site_purpose?: string;
 }
