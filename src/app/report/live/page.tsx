@@ -157,7 +157,7 @@ export default function LiveReportPage() {
           </div>
           <h1 className="text-5xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">{organizationName}</h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Complete UX/UI analysis report generated on <FormattedDate date={metadata?.generated_at || new Date().toISOString()} />
+            Complete UX/UI analysis report generated on <FormattedDate dateString={metadata?.generated_at || new Date().toISOString()} />
           </p>
         </header>
 
