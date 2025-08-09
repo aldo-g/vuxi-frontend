@@ -5,67 +5,79 @@
  * Provides abstracted database operations and connection
  * management for data persistence.
  * 
- * @responsibilities
- * - Establishes database connections
- * - Provides query execution utilities
- * - Handles database error management
- * - Manages connection pooling and cleanup
- * - Abstracts database operations for application use
+ * Frontend-only deployment stub - replaces @repo/db import
+ * Returns null/undefined for database operations to prevent build errors
+ * while gracefully handling the method calls.
  */
 
 // Frontend-only deployment stub - replaces @repo/db import
 const database = {
-  $transaction: async () => {
-    throw new Error('Database operations not available in frontend-only mode');
+  $transaction: async (...args: any[]) => {
+    console.warn('Database operations not available in frontend-only mode');
+    return null;
   },
   project: {
-    upsert: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    upsert: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    findMany: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    findMany: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return [];
     },
-    findUnique: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    findUnique: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    create: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    create: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    update: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    update: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     }
   },
   analysisRun: {
-    create: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    create: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    findMany: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    findMany: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return [];
     },
-    findUnique: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    findUnique: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    update: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    update: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     }
   },
   screenshot: {
-    create: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    create: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    createMany: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    createMany: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     }
   },
   user: {
-    findUnique: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    findUnique: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null; // This will make authentication fail gracefully
     },
-    create: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    create: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     },
-    update: async () => {
-      throw new Error('Database operations not available in frontend-only mode');
+    update: async (...args: any[]) => {
+      console.warn('Database operations not available in frontend-only mode');
+      return null;
     }
   }
 };
