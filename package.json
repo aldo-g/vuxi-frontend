@@ -1,5 +1,5 @@
 {
-    "name": "next-app",
+    "name": "vuxi-frontend",
     "version": "0.1.0",
     "private": true,
     "scripts": {
@@ -9,7 +9,7 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@repo/db": "file:../db",
+        "@anthropic-ai/sdk": "^0.20.0",
         "@prisma/client": "^6.9.0",
         "@radix-ui/react-accordion": "^1.2.1",
         "@radix-ui/react-alert-dialog": "^1.1.3",
@@ -43,23 +43,21 @@
         "class-variance-authority": "^0.7.1",
         "cmdk": "^1.0.0",
         "framer-motion": "^12.16.0",
+        "fs-extra": "^11.0.0",
         "jose": "^6.0.11",
         "lucide-react": "^0.513.0",
         "next": "14.2.3",
+        "openai": "^4.0.0",
         "react": "^18",
         "react-dom": "^18",
         "react-hook-form": "^7.55.0",
         "react-markdown": "^10.1.0",
         "remark-gfm": "^4.0.1",
-        "tailwind-merge": "^3.3.0",
-        "openai": "^4.0.0",
-        "@anthropic-ai/sdk": "^0.20.0",
-        "puppeteer": "^21.0.0",
-        "lighthouse": "^11.0.0",
-        "fs-extra": "^11.0.0"
+        "tailwind-merge": "^3.3.0"
     },
     "devDependencies": {
         "@types/bcryptjs": "^2.4.6",
+        "@types/fs-extra": "^11.0.0",
         "@types/node": "^20",
         "@types/react": "^18",
         "@types/react-dom": "^18",
