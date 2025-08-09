@@ -13,6 +13,61 @@
  * - Abstracts database operations for application use
  */
 
-// packages/next-app/src/lib/prisma.ts
-import prisma from '@repo/db';
-export default prisma;
+// Frontend-only deployment stub - replaces @repo/db import
+const database = {
+  $transaction: async () => {
+    throw new Error('Database operations not available in frontend-only mode');
+  },
+  project: {
+    upsert: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    findMany: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    findUnique: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    create: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    update: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    }
+  },
+  analysisRun: {
+    create: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    findMany: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    findUnique: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    update: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    }
+  },
+  screenshot: {
+    create: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    createMany: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    }
+  },
+  user: {
+    findUnique: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    create: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    },
+    update: async () => {
+      throw new Error('Database operations not available in frontend-only mode');
+    }
+  }
+};
+
+export default database;
