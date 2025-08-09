@@ -1,46 +1,13 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/database';
-import bcrypt from 'bcryptjs';
-import * as jose from 'jose';
+import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
-  try {
-    const { email, password } = await request.json();
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
-    }
-
-    // Create the JWT token with number ID
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new jose.SignJWT({ 
-      userId: user.id,        // user.id is already a number
-      email: user.email 
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
-      .setIssuedAt()
-      .sign(secret);
-      
-    // Create a response and set the token in a secure, httpOnly cookie
-    const response = NextResponse.json({ message: 'Login successful' });
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
-
-    return response;
-
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
-  }
+/**
+ * Limited deployment placeholder:
+ * - Disables login logic entirely to avoid type errors and DB/bcrypt usage.
+ * - Always returns 501 Not Implemented for this endpoint.
+ */
+export async function POST(_request: Request) {
+  return NextResponse.json(
+    { error: "Login is not available in this limited version." },
+    { status: 501 }
+  );
 }
