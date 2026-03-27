@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int      @id @default(autoincrement())
+  Name           String?
+  email              String   @unique // This is the login email
+  passwordHash       String
+  createdAt          DateTime @default(now())
+  projects           Project[]
+}
+
+model Project {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  name         String
+  baseUrl      String
+  orgName      String?
+  orgPurpose   String?
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id])
+  analysisRuns AnalysisRun[]
+
+  @@unique([userId, baseUrl])
+}
+
+model AnalysisRun {
+  id            Int      @id @default(autoincrement())
+  projectId     Int
+  captureJobId  String?  // NEW: Store the capture job ID from the payload
+  status        String
+  progress      Json?
+  finalReport   Json?
+  overallScore  Int?
+  createdAt     DateTime @default(now())
+  project       Project  @relation(fields: [projectId], references: [id])
+  analyzedPages AnalyzedPage[]
+}
+
+// UPDATED: This model no longer has a screenshotUrl
+model AnalyzedPage {
+  id          Int      @id @default(autoincrement())
+  runId       Int
+  url         String
+  pageAim     String?
+  analysisRun AnalysisRun @relation(fields: [runId], references: [id])
+  screenshots Screenshot[] // This now links to the new Screenshot table
+}
+
+// UPDATED: Enhanced Screenshot model to capture payload data
+model Screenshot {
+  id             Int      @id @default(autoincrement())
+  analyzedPageId Int
+  url            String   // The original page URL
+  filename       String?  // The screenshot filename
+  storageUrl     String   // The URL/path to the screenshot file in storage
+  success        Boolean  @default(true) // Whether the capture was successful
+  viewport       String?  // Viewport info (e.g., "desktop", "mobile", "1440x900")
+  duration_ms    Int?     // Time taken to capture the screenshot
+  timestamp      DateTime? // When the screenshot was taken
+  error          String?  // Any error that occurred during capture
+  createdAt      DateTime @default(now())
+  analyzedPage   AnalyzedPage @relation(fields: [analyzedPageId], references: [id])
+}

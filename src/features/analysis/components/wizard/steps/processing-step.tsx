@@ -31,7 +31,7 @@ export function ProcessingStep({ captureJob, onNext, onBack }: ProcessingStepPro
         </div>
         <CardTitle className="text-2xl font-semibold">Capturing Screenshots</CardTitle>
         <p className="text-slate-600 mt-2">
-          We're just finishing up the website capture process. This should only take a moment more.
+          We're just finishing up the website capture process. This may take a couple of minutes.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">

@@ -22,7 +22,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
     },
     {
       title: "Average Score",
-      value: `${stats.avgScore.toFixed(1)}/10`,
+      value: stats.totalReports === 0 ? "N/A" : `${stats.avgScore.toFixed(1)}/10`,
       icon: TrendingUp,
       color: "text-green-600 bg-green-100"
     },
