@@ -15,7 +15,35 @@ interface AnalysisWizardProps {
   onCancel?: () => void;
 }
 
-function AnalysisProgressStep({ analysisJob, error }: { analysisJob: any; error: string | null }) {
+function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJob: any; captureJobId: string; error: string | null }) {
+  const handleViewReport = async () => {
+    let reportData = analysisJob?.results?.reportData;
+
+    // Fall back to re-fetching if not in state
+    if (!reportData && analysisJob?.id) {
+      try {
+        const res = await fetch(`/api/start-analysis?jobId=${analysisJob.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          reportData = data.results?.reportData;
+        }
+      } catch (_) {}
+    }
+
+    if (reportData) {
+      // Strip base64 screenshots — too large for sessionStorage (5MB limit).
+      // The report page will load images directly from the capture service instead.
+      const { screenshots: _screenshots, ...reportWithoutScreenshots } = reportData;
+      sessionStorage.setItem('liveReportData', JSON.stringify(reportWithoutScreenshots));
+    }
+
+    // Store captureJobId so report page can construct screenshot URLs
+    if (captureJobId) {
+      sessionStorage.setItem('liveCaptureJobId', captureJobId);
+    }
+
+    window.location.href = '/report/live';
+  };
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
@@ -53,6 +81,15 @@ function AnalysisProgressStep({ analysisJob, error }: { analysisJob: any; error:
                 <p className="text-sm text-slate-600 mt-1">{analysisJob.progress?.message ?? 'Processing...'}</p>
               </div>
             </div>
+
+            {analysisJob.status === 'completed' && (
+              <button
+                onClick={handleViewReport}
+                className="flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all"
+              >
+                View Your Report
+              </button>
+            )}
           </div>
         )}
 
@@ -166,16 +203,20 @@ export function AnalysisWizard({ onCancel }: AnalysisWizardProps) {
           <ScreenshotReview
             screenshots={analysisData.screenshots ?? []}
             captureJobId={analysisData.captureJobId ?? ''}
+            organizationName={analysisData.organizationName}
+            sitePurpose={analysisData.sitePurpose}
             onStartAnalysis={startAnalysis}
             onBack={previousStep}
             isAnalyzing={isAnalyzing}
             updateAnalysisData={updateAnalysisData}
+            error={error}
           />
         );
       case 6:
         return (
           <AnalysisProgressStep
             analysisJob={analysisJob}
+            captureJobId={analysisData.captureJobId ?? ''}
             error={error}
           />
         );

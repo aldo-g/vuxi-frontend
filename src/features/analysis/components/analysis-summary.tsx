@@ -15,7 +15,7 @@ export function AnalysisSummary({ analysisData }: AnalysisSummaryProps) {
         <p><strong>Website:</strong> {analysisData.websiteUrl}</p>
         <p><strong>Organization:</strong> {analysisData.organizationName}</p>
         <p><strong>Purpose:</strong> {analysisData.sitePurpose}</p>
-        <p><strong>Pages Captured:</strong> {analysisData.screenshots?.length || 0}</p>
+        <p><strong>Pages Captured:</strong> {new Set(analysisData.screenshots?.map(s => s.url) ?? []).size || 0}</p>
       </div>
     </div>
   );

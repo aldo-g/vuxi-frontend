@@ -51,7 +51,7 @@ export const getScreenshotUrl = (screenshot: Screenshot, jobId: string): string 
   const screenshotData = screenshot.success ? screenshot.data : null;
   
   if (!screenshotData) {
-    return `http://localhost:3001/data/job_${jobId}/screenshots/desktop/placeholder.png`;
+    return `http://localhost:3001/data/job_${jobId}/desktop/placeholder.png`;
   }
 
   // Handle custom uploaded screenshots
@@ -69,26 +69,26 @@ export const getScreenshotUrl = (screenshot: Screenshot, jobId: string): string 
     }
     
     // If custom but no data, return placeholder
-    return `http://localhost:3001/data/job_${jobId}/screenshots/desktop/placeholder.png`;
+    return `http://localhost:3001/data/job_${jobId}/desktop/placeholder.png`;
   }
   
-  // Handle regular capture service screenshots
+  // Handle regular capture service screenshots.
+  // Files are stored at: vuxi-capture/data/job_{id}/desktop/{filename}
+  // Served by the capture server at: /data/job_{id}/desktop/{filename}
   const baseUrl = `http://localhost:3001/data/job_${jobId}`;
-  
-  // Priority 1: Use the path directly from the service data
+
+  // Priority 1: data.path is already relative to the job dir (e.g. "desktop/filename.png")
   if (screenshotData.path && typeof screenshotData.path === 'string') {
-    const url = `${baseUrl}/screenshots/${screenshotData.path}`;
-    return url;
+    return `${baseUrl}/${screenshotData.path}`;
   }
-  
-  // Priority 2: Use filename with the correct directory structure
+
+  // Priority 2: build from filename alone
   if (screenshotData.filename && typeof screenshotData.filename === 'string') {
-    const url = `${baseUrl}/screenshots/desktop/${screenshotData.filename}`;
-    return url;
+    return `${baseUrl}/desktop/${screenshotData.filename}`;
   }
-  
-  // Priority 3: Fallback to placeholder
-  return `${baseUrl}/screenshots/desktop/placeholder.png`;
+
+  // Priority 3: Fallback placeholder
+  return `${baseUrl}/desktop/placeholder.png`;
 };
 
 // Text formatting utilities

@@ -75,16 +75,17 @@ const getOverallScoreStatusText = (score: number) => {
 
 export default function LiveReportPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [captureJobId, setCaptureJobId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get report data from sessionStorage (set by your analysis completion page)
     try {
       const storedData = sessionStorage.getItem('liveReportData');
+      const storedJobId = sessionStorage.getItem('liveCaptureJobId');
       if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        setReportData(parsedData);
+        setReportData(JSON.parse(storedData));
+        setCaptureJobId(storedJobId);
       } else {
         setError('No report data found. Please run a new analysis.');
       }
@@ -96,14 +97,12 @@ export default function LiveReportPage() {
   }, []);
 
   const getScreenshotSrc = (screenshotPath: string | undefined) => {
-    if (!screenshotPath || !reportData?.screenshots) return "";
-    
-    // Extract filename from path
+    if (!screenshotPath || !captureJobId) return "";
+    // screenshotPath from report generator is "temp_screenshots/filename.png"
+    // Actual files are at job dir /desktop/filename.png on capture service
     const filename = screenshotPath.split('/').pop();
     if (!filename) return "";
-    
-    // Return base64 image data
-    return reportData.screenshots[filename] || "";
+    return `http://localhost:3001/data/job_${captureJobId}/desktop/${filename}`;
   };
 
   if (loading) {

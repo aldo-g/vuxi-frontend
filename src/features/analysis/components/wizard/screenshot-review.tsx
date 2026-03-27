@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ArrowLeft, Zap } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, Zap, AlertCircle } from 'lucide-react';
 import { ScreenshotGrid } from '../screenshots';
 import { ScreenshotModal } from '../screenshots/screenshot-modal';
 import { EditScreenshotModal } from '../screenshots/edit-screenshot-modal';
@@ -15,10 +15,13 @@ import type { Screenshot } from '@/types';
 export function ScreenshotReview({
   screenshots,
   captureJobId,
+  organizationName,
+  sitePurpose,
   onStartAnalysis,
   onBack,
   isAnalyzing,
-  updateAnalysisData
+  updateAnalysisData,
+  error
 }: ScreenshotReviewProps) {
   const [selectedScreenshotIndex, setSelectedScreenshotIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +117,7 @@ export function ScreenshotReview({
       <CardContent className="space-y-8">
         {/* Screenshot Grid */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Captured Pages ({screenshots.length})</h3>
+          <h3 className="text-lg font-semibold mb-4">Captured Pages ({new Set(screenshots.map(s => s.url)).size})</h3>
           <ScreenshotGrid
             screenshots={screenshots}
             captureJobId={captureJobId}
@@ -130,11 +133,19 @@ export function ScreenshotReview({
           <h3 className="text-lg font-semibold mb-4">Analysis Configuration</h3>
           <AnalysisSummary analysisData={{
             websiteUrl: screenshots[0]?.url || '',
-            organizationName: 'Current Analysis',
-            sitePurpose: 'Website analysis',
+            organizationName,
+            sitePurpose,
             screenshots
           }} />
         </div>
+
+        {/* Error display */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-6 border-t border-slate-200">

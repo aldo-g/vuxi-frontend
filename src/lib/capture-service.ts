@@ -104,55 +104,52 @@ export class CaptureService {
           captureJobId: analysisRun.captureJobId
         });
 
-        // 3. Process screenshots and create analyzed pages
+        // 3. Group screenshots by URL — one AnalyzedPage per unique URL,
+        //    multiple Screenshot records per page (one per interaction state)
         console.log(`📸 Processing ${screenshots.length} screenshots...`);
         const analyzedPageIds: number[] = [];
         const screenshotIds: number[] = [];
 
-        for (let i = 0; i < screenshots.length; i++) {
-          const screenshot = screenshots[i];
-          console.log(`📸 Processing screenshot ${i + 1}/${screenshots.length}:`, {
-            url: screenshot.url,
-            success: screenshot.success,
-            hasData: !!screenshot.data
-          });
+        // Group by URL
+        const screenshotsByUrl = new Map<string, typeof screenshots>();
+        for (const screenshot of screenshots) {
+          if (!screenshot.success || !screenshot.data) continue;
+          const existing = screenshotsByUrl.get(screenshot.url) ?? [];
+          existing.push(screenshot);
+          screenshotsByUrl.set(screenshot.url, existing);
+        }
 
-          if (!screenshot.success || !screenshot.data) {
-            console.log(`⚠️ Skipping failed screenshot for ${screenshot.url}`);
-            continue; // Skip failed screenshots
-          }
+        console.log(`📄 Unique pages: ${screenshotsByUrl.size}`);
 
-          // Create analyzed page for this URL
+        for (const [url, pageScreenshots] of screenshotsByUrl) {
+          // One AnalyzedPage per unique URL
           const analyzedPage = await tx.analyzedPage.create({
             data: {
               runId: analysisRun.id,
-              url: screenshot.url,
-              pageAim: `Analysis of ${screenshot.url}`,
+              url,
+              pageAim: `Analysis of ${url}`,
             }
           });
           analyzedPageIds.push(analyzedPage.id);
+          console.log(`✅ Created analyzed page ${analyzedPage.id} for ${url} (${pageScreenshots.length} screenshots)`);
 
-          console.log(`✅ Created analyzed page ${analyzedPage.id} for ${screenshot.url}`);
-
-          // Create screenshot record
-          const screenshotRecord = await tx.screenshot.create({
-            data: {
-              analyzedPageId: analyzedPage.id,
-              url: screenshot.url,
-              filename: screenshot.data.filename || null,
-              storageUrl: screenshot.data.path || screenshot.data.filename || '',
-              success: screenshot.success,
-              viewport: screenshot.data.viewport 
-                ? `${screenshot.data.viewport.width}x${screenshot.data.viewport.height}` 
-                : 'desktop',
-              duration_ms: screenshot.data.duration_ms || null,
-              timestamp: screenshot.data.timestamp ? new Date(screenshot.data.timestamp) : null,
-              error: screenshot.error || null,
-            }
-          });
-          screenshotIds.push(screenshotRecord.id);
-
-          console.log(`✅ Created screenshot record ${screenshotRecord.id}`);
+          // One Screenshot record per interaction state
+          for (const screenshot of pageScreenshots) {
+            const screenshotRecord = await tx.screenshot.create({
+              data: {
+                analyzedPageId: analyzedPage.id,
+                url: screenshot.url,
+                filename: screenshot.data!.filename || null,
+                storageUrl: screenshot.data!.path || screenshot.data!.filename || '',
+                success: screenshot.success,
+                viewport: 'desktop',
+                duration_ms: null,
+                timestamp: screenshot.data!.timestamp ? new Date(screenshot.data!.timestamp as string) : null,
+                error: null,
+              }
+            });
+            screenshotIds.push(screenshotRecord.id);
+          }
         }
 
         console.log('🎉 Transaction completed successfully!');

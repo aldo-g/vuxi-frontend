@@ -22,8 +22,8 @@ export function useCurrentUser() {
         
         if (response.ok) {
           const userData = await response.json();
-          console.log('User data from API:', userData); // Debug log
-          setUser(userData.user);
+          // /api/auth/me returns the user object directly
+          setUser(userData.user ?? userData);
         } else {
           setError('Failed to fetch user data');
         }

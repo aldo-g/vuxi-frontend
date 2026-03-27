@@ -22,7 +22,7 @@ export function useCurrentUser() {
         
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData.user);
+          setUser(userData.user ?? userData);
         } else {
           setError('Failed to fetch user data');
         }

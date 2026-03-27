@@ -58,8 +58,11 @@ export interface PurposeStepProps extends StepProps {
 export interface ScreenshotReviewProps {
   screenshots: Screenshot[];
   captureJobId: string;
+  organizationName: string;
+  sitePurpose: string;
   onStartAnalysis: () => void;
   onBack: () => void;
   isAnalyzing: boolean;
   updateAnalysisData: (updates: Partial<AnalysisData>) => void;
+  error?: string | null;
 }

@@ -22,26 +22,48 @@ export function ScreenshotGrid({
   onDeleteClick,
   onAddClick
 }: ScreenshotGridProps) {
+  // Group screenshots by URL so multiple interaction states of the same page
+  // are shown as a single card. Prefer the baseline/standard image for the preview.
+  const grouped = React.useMemo(() => {
+    const map = new Map<string, { primary: Screenshot; primaryIndex: number; count: number }>();
+    screenshots.forEach((screenshot, index) => {
+      const key = screenshot.url;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, { primary: screenshot, primaryIndex: index, count: 1 });
+      } else {
+        existing.count += 1;
+        // Prefer the baseline/standard screenshot as the primary preview
+        const filename = screenshot.data?.filename ?? '';
+        if (filename.includes('baseline') || filename.includes('standard')) {
+          map.set(key, { primary: screenshot, primaryIndex: index, count: existing.count });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [screenshots]);
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {screenshots.map((screenshot, index) => {
-        const imageUrl = getScreenshotUrl(screenshot, captureJobId);
-        const pageName = getPageDisplayName(screenshot.url, screenshot.data?.customPageName);
-        
+      {grouped.map(({ primary, primaryIndex, count }) => {
+        const imageUrl = getScreenshotUrl(primary, captureJobId);
+        const pageName = getPageDisplayName(primary.url, primary.data?.customPageName);
+
         return (
           <ScreenshotCard
-            key={index}
-            screenshot={screenshot}
+            key={primary.url}
+            screenshot={primary}
             imageUrl={imageUrl}
             pageName={pageName}
-            index={index}
+            index={primaryIndex}
+            interactionCount={count}
             onScreenshotClick={onScreenshotClick}
             onEditClick={onEditClick}
             onDeleteClick={onDeleteClick}
           />
         );
       })}
-      
+
       <AddScreenshotCard onAddClick={onAddClick} />
     </div>
   );
@@ -52,6 +74,7 @@ interface ScreenshotCardProps {
   imageUrl: string;
   pageName: string;
   index: number;
+  interactionCount?: number;
   onScreenshotClick: (index: number) => void;
   onEditClick: (index: number) => void;
   onDeleteClick: (index: number) => void;
@@ -62,6 +85,7 @@ function ScreenshotCard({
   imageUrl,
   pageName,
   index,
+  interactionCount = 1,
   onScreenshotClick,
   onEditClick,
   onDeleteClick
@@ -148,6 +172,12 @@ function ScreenshotCard({
           <div className="absolute top-3 left-3 bg-green-100 border border-green-200 rounded-full px-2 py-1 flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-xs text-green-700 font-medium">Custom</span>
+          </div>
+        )}
+        {/* Interaction count badge */}
+        {interactionCount > 1 && (
+          <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-medium rounded-full px-2 py-0.5">
+            {interactionCount} states
           </div>
         )}
       </div>

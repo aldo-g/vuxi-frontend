@@ -150,11 +150,32 @@ export function useWizardState() {
         setCaptureJob(jobData);
         
         if (jobData.status === 'completed') {
-          // Update analysis data with screenshots
-          updateAnalysisData({ 
-            screenshots: jobData.results?.screenshots || []
-          });
-          
+          const rawScreenshots: Array<{ url: string; filename?: string; path?: string; [key: string]: unknown }> = jobData.results?.screenshots || [];
+          const screenshots = rawScreenshots.map(s => ({
+            url: s.url as string,
+            success: true,
+            data: {
+              url: s.url as string,
+              filename: s.filename as string | undefined,
+              path: s.path as string | undefined,
+              timestamp: s.timestamp as string | undefined,
+            }
+          }));
+          updateAnalysisData({ screenshots });
+
+          // Save capture data to DB (creates Project + AnalysisRun records)
+          const captureJobId = jobData.id;
+          if (captureJobId && user?.id) {
+            const currentAnalysisData = {
+              ...state.analysisData,
+              screenshots,
+              userId: user.id,
+            };
+            saveCaptureData(currentAnalysisData, captureJobId).catch(err =>
+              console.error('Failed to save capture data to DB:', err)
+            );
+          }
+
           // Stop polling
           if (capturePollingRef.current) {
             clearInterval(capturePollingRef.current);
@@ -175,7 +196,7 @@ export function useWizardState() {
     } finally {
       isCapturePollingRef.current = false;
     }
-  }, [state.captureJob?.id, setCaptureJob, updateAnalysisData, setError]);
+  }, [state.captureJob?.id, state.analysisData, user?.id, setCaptureJob, updateAnalysisData, setError, saveCaptureData]);
 
   // Analysis job polling
   const pollAnalysisJobStatus = useCallback(async () => {
@@ -185,15 +206,47 @@ export function useWizardState() {
     
     try {
       const response = await fetch(`/api/start-analysis?jobId=${state.analysisJob.id}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Analysis job not found — the service may have restarted. Please try again.');
+          setAnalyzing(false);
+          if (analysisPollingRef.current) {
+            clearInterval(analysisPollingRef.current);
+            analysisPollingRef.current = null;
+          }
+        }
+        return;
+      }
       if (response.ok) {
         const jobData = await response.json();
         setAnalysisJob(jobData);
         
         if (jobData.status === 'completed') {
           setAnalyzing(false);
-          
+
           if (jobData.results?.reportData) {
-            sessionStorage.setItem('liveReportData', JSON.stringify(jobData.results.reportData));
+            // Strip base64 screenshots before storing — too large for sessionStorage
+            const { screenshots: _screenshots, ...reportWithoutScreenshots } = jobData.results.reportData;
+            sessionStorage.setItem('liveReportData', JSON.stringify(reportWithoutScreenshots));
+            // Store captureJobId separately so the report page can load screenshots directly
+            if (state.analysisData.captureJobId) {
+              sessionStorage.setItem('liveCaptureJobId', state.analysisData.captureJobId);
+            }
+
+            // Save report to database
+            const captureJobId = state.analysisData.captureJobId;
+            if (captureJobId) {
+              fetch('/api/analysis/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  captureJobId,
+                  reportData: jobData.results.reportData,
+                  overallScore: jobData.results.reportData?.overall_summary?.overall_score ?? null,
+                }),
+              }).catch(err => console.error('Failed to save report to DB:', err));
+            }
+
             setTimeout(() => {
               window.location.href = '/report/live';
             }, 100);
@@ -277,16 +330,15 @@ export function useWizardState() {
   }, [updateAnalysisData, setCaptureJob, setCaptureStarted, setLoading, setError]);
 
   // Start analysis
-  // Start analysis
   const startAnalysis = useCallback(async (): Promise<void> => {
+    console.log('🚀 startAnalysis called', {
+      captureJobId: state.analysisData.captureJobId,
+      screenshotCount: state.analysisData.screenshots?.length,
+      userId: user?.id
+    });
+
     if (!state.analysisData.captureJobId || !state.analysisData.screenshots?.length) {
       setError('No screenshots available for analysis');
-      return;
-    }
-
-    // Make sure we have the user ID for database saving
-    if (!user?.id) {
-      setError('User authentication required');
       return;
     }
 
@@ -301,7 +353,7 @@ export function useWizardState() {
         body: JSON.stringify({
           analysisData: {
             ...state.analysisData,
-            userId: user.id // Add user ID for database saving
+            userId: user?.id
           },
           captureJobId: state.analysisData.captureJobId
         })
@@ -327,9 +379,6 @@ export function useWizardState() {
         progress: { stage: 'starting', percentage: 0, message: 'Starting analysis...' },
         results: result.reportData ? { reportData: result.reportData } : undefined
       });
-
-      // Start polling for analysis progress
-      analysisPollingRef.current = setInterval(pollAnalysisJobStatus, POLLING_INTERVALS.ANALYSIS_JOB);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start analysis';

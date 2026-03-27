@@ -145,70 +145,15 @@ export function ScreenshotModal({ screenshots, initialIndex, isOpen, onClose, ca
         )}
       </div>
 
-      {/* Main Content - Iframe */}
+      {/* Main Content */}
       <div className="relative w-full h-full flex items-center justify-center p-8">
         {currentImageUrl && currentScreenshot?.success ? (
-          <div className="relative w-full h-full max-w-6xl max-h-6xl bg-white rounded-lg overflow-hidden shadow-2xl">
-            <iframe
+          <div className="relative max-w-full max-h-full flex items-center justify-center">
+            <img
               src={currentImageUrl}
-              className="w-full h-full border-0"
-              title={`Screenshot of ${currentScreenshot.url}`}
-              style={{
-                zoom: '0.75' // This should make the content smaller and fit better
-              }}
-              onLoad={(e) => {
-                console.log(`✅ Screenshot loaded in iframe: ${currentImageUrl}`);
-                
-                // Try multiple approaches to make the image fit
-                try {
-                  const iframe = e.target as HTMLIFrameElement;
-                  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                  
-                  if (iframeDoc) {
-                    // Method 1: Inject CSS to control image display
-                    const style = iframeDoc.createElement('style');
-                    style.textContent = `
-                      * {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                      }
-                      body {
-                        overflow: hidden !important;
-                        background: white !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        height: 100vh !important;
-                      }
-                      img {
-                        max-width: 95% !important;
-                        max-height: 95% !important;
-                        width: auto !important;
-                        height: auto !important;
-                        object-fit: contain !important;
-                        display: block !important;
-                      }
-                    `;
-                    iframeDoc.head.appendChild(style);
-                    
-                    // Method 2: If there's an image, adjust its properties directly
-                    const images = iframeDoc.getElementsByTagName('img');
-                    if (images.length > 0) {
-                      const img = images[0];
-                      img.style.maxWidth = '95%';
-                      img.style.maxHeight = '95%';
-                      img.style.width = 'auto';
-                      img.style.height = 'auto';
-                      img.style.objectFit = 'contain';
-                    }
-                  }
-                } catch (error) {
-                  console.log('Could not inject styles due to CORS, but zoom should still work');
-                }
-              }}
-              onError={() => console.error(`❌ Screenshot failed in iframe: ${currentImageUrl}`)}
-            />
-          </div>
+              alt={`Screenshot of ${currentScreenshot.url}`}
+              className="max-w-full max-h-[calc(100vh-8rem)] object-contain rounded-lg shadow-2xl"
+            /></div>
         ) : (
           <div className="text-white text-center">
             <div className="w-24 h-24 mx-auto mb-4 opacity-50">

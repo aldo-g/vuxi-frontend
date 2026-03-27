@@ -1,22 +1,72 @@
 import { NextResponse } from "next/server";
 
-/**
- * Limited deployment placeholder:
- * - Disables the start-analysis endpoint to avoid type requirements (e.g., userId)
- *   and any external service/database interactions.
- * - Always returns 501 Not Implemented.
- */
-export async function POST(_request: Request) {
-  return NextResponse.json(
-    { error: "Start analysis is not available in this limited version." },
-    { status: 501 }
-  );
+const ANALYSIS_SERVICE_URL = "http://localhost:3002/api/analysis";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { analysisData, captureJobId } = body;
+
+    if (!analysisData || !captureJobId) {
+      return NextResponse.json(
+        { error: "Missing required fields: analysisData and captureJobId" },
+        { status: 400 }
+      );
+    }
+
+    const response = await fetch(ANALYSIS_SERVICE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analysisData, captureJobId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: `Analysis service error: ${errorText}` },
+        { status: response.status }
+      );
+    }
+
+    const result = await response.json();
+
+    return NextResponse.json({
+      success: true,
+      analysisJobId: result.jobId,
+      status: result.status,
+      message: result.message,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to start analysis";
+    console.error("start-analysis route error:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
-// Optional: if your app might call GET on this route, keep it safe too.
-export async function GET(_request: Request) {
-  return NextResponse.json(
-    { error: "Start analysis is not available in this limited version." },
-    { status: 501 }
-  );
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const jobId = searchParams.get("jobId");
+
+  if (!jobId) {
+    return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
+  }
+
+  try {
+    const response = await fetch(`${ANALYSIS_SERVICE_URL}/${jobId}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        { error: `Analysis service error: ${errorText}` },
+        { status: response.status }
+      );
+    }
+
+    const result = await response.json();
+    return NextResponse.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to get analysis status";
+    console.error("start-analysis GET route error:", error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
