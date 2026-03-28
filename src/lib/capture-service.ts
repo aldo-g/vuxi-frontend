@@ -140,7 +140,7 @@ export class CaptureService {
                 analyzedPageId: analyzedPage.id,
                 url: screenshot.url,
                 filename: screenshot.data!.filename || null,
-                storageUrl: screenshot.data!.path || screenshot.data!.filename || '',
+                storageUrl: screenshot.data!.storageUrl || screenshot.data!.path || screenshot.data!.filename || '',
                 success: screenshot.success,
                 viewport: 'desktop',
                 duration_ms: null,

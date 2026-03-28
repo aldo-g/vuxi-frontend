@@ -4,8 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { AnalysisWizard } from '@/features/analysis';
+import { useSearchParams } from 'next/navigation';
 
 export default function CreateAnalysisPage() {
+  const searchParams = useSearchParams();
+  const initialUrl = searchParams.get('url') ?? undefined;
+  const projectIdParam = searchParams.get('projectId');
+  const projectId = projectIdParam ? parseInt(projectIdParam, 10) : undefined;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -31,7 +37,7 @@ export default function CreateAnalysisPage() {
         </div>
 
         {/* Wizard Component */}
-        <AnalysisWizard />
+        <AnalysisWizard initialUrl={initialUrl} projectId={projectId} />
       </div>
     </div>
   );

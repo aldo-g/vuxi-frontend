@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
     REGISTER: '/api/auth/register',
     LOGOUT: '/api/auth/logout',
     ME: '/api/auth/me',
+    UPDATE: '/api/auth/me',
   },
 } as const;
 

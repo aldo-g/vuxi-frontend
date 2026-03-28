@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Plus, Eye, TrendingUp, ArrowRight } from 'lucide-react';
+import { Plus, TrendingUp, ArrowRight } from 'lucide-react';
 
 export function QuickActions() {
   const actions = [
@@ -15,15 +15,7 @@ export function QuickActions() {
       color: "from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700",
       bgColor: "from-purple-500 to-pink-600"
     },
-    {
-      title: "View Example Reports",
-      description: "Browse through sample UX analysis reports and insights",
-      icon: Eye,
-      href: "/reports",
-      color: "from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
-      bgColor: "from-blue-500 to-indigo-600"
-    },
-    {
+{
       title: "Latest Analysis",
       description: "Quick access to the most recent UX evaluation report",
       icon: TrendingUp,
@@ -35,7 +27,7 @@ export function QuickActions() {
   ];
 
   return (
-    <div className="grid gap-8 md:grid-cols-3 mb-16">
+    <div className="grid gap-8 md:grid-cols-2 mb-16">
       {actions.map((action) => {
         const IconComponent = action.icon;
         return (

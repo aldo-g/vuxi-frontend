@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/database";
 
 const ANALYSIS_SERVICE_URL = "http://localhost:3002/api/analysis";
 
@@ -12,6 +13,22 @@ export async function POST(request: Request) {
         { error: "Missing required fields: analysisData and captureJobId" },
         { status: 400 }
       );
+    }
+
+    // Update org name and purpose on the project now that the user has confirmed them
+    if (analysisData.userId && analysisData.websiteUrl) {
+      await prisma.project.updateMany({
+        where: {
+          userId: analysisData.userId,
+          baseUrl: analysisData.websiteUrl,
+        },
+        data: {
+          orgName: analysisData.organizationName || undefined,
+          orgPurpose: analysisData.sitePurpose || undefined,
+        },
+      }).catch((err: unknown) => {
+        console.warn("Failed to update project org details:", err);
+      });
     }
 
     const response = await fetch(ANALYSIS_SERVICE_URL, {

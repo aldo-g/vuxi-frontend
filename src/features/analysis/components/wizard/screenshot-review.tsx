@@ -76,18 +76,31 @@ export function ScreenshotReview({
     setIsEditModalOpen(true);
   };
 
-  const handleSaveScreenshot = (newScreenshot: Screenshot) => {
-    if (typeof editingIndex === 'number') {
-      // Edit existing screenshot - type guard ensures editingIndex is a number
+  const handleRefreshScreenshots = (url: string, newScreenshots: Screenshot[]) => {
+    // Replace all screenshots for this URL with the freshly captured ones
+    const withoutOld = screenshots.filter((s) => s.url !== url);
+    updateAnalysisData({ screenshots: [...withoutOld, ...newScreenshots] });
+  };
+
+  const handleSaveScreenshot = (newScreenshots: Screenshot[]) => {
+    if (typeof editingIndex === 'number' && newScreenshots.length === 1) {
+      // Editing a single existing screenshot
       const updatedScreenshots = [...screenshots];
-      updatedScreenshots[editingIndex] = newScreenshot;
+      updatedScreenshots[editingIndex] = newScreenshots[0];
+      updateAnalysisData({ screenshots: updatedScreenshots });
+    } else if (typeof editingIndex === 'number') {
+      // Edit replaced with multiple (e.g. recaptured with interactions) — replace the one entry
+      const updatedScreenshots = [
+        ...screenshots.slice(0, editingIndex),
+        ...newScreenshots,
+        ...screenshots.slice(editingIndex + 1),
+      ];
       updateAnalysisData({ screenshots: updatedScreenshots });
     } else {
-      // Add new screenshot
-      const updatedScreenshots = [...screenshots, newScreenshot];
-      updateAnalysisData({ screenshots: updatedScreenshots });
+      // Add new screenshots
+      updateAnalysisData({ screenshots: [...screenshots, ...newScreenshots] });
     }
-    
+
     // Close edit modal
     closeEditModal();
   };
@@ -125,6 +138,7 @@ export function ScreenshotReview({
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onAddClick={handleAddClick}
+            onRefreshScreenshots={handleRefreshScreenshots}
           />
         </div>
 

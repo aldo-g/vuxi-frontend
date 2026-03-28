@@ -49,45 +49,44 @@ export const getScoreColorTextClass = (score: number): string => {
 // Screenshot utilities
 export const getScreenshotUrl = (screenshot: Screenshot, jobId: string): string => {
   const screenshotData = screenshot.success ? screenshot.data : null;
-  
+
   if (!screenshotData) {
     return `http://localhost:3001/data/job_${jobId}/desktop/placeholder.png`;
   }
 
-  // Handle custom uploaded screenshots
+  const baseUrl = `http://localhost:3001/data/job_${jobId}`;
+
+  // Priority 1: Supabase / fully-qualified Storage URL only
+  if (
+    screenshotData.storageUrl &&
+    typeof screenshotData.storageUrl === 'string' &&
+    screenshotData.storageUrl.startsWith('http')
+  ) {
+    return screenshotData.storageUrl;
+  }
+
+  // Priority 2: Custom uploaded screenshots (dataUrl)
   if (screenshotData.isCustom) {
-    // Check if we have a saved file path (new format)
-    if (screenshotData.path && screenshotData.path.startsWith('uploads/')) {
-      // This is a file saved through our upload API
-      // The path will be like: uploads/screenshots/${captureJobId}/${filename}
-      return `/${screenshotData.path}`;
-    }
-    
-    // Fallback to dataUrl for existing custom screenshots
     if (screenshotData.dataUrl) {
       return screenshotData.dataUrl;
     }
-    
-    // If custom but no data, return placeholder
-    return `http://localhost:3001/data/job_${jobId}/desktop/placeholder.png`;
+    return `${baseUrl}/desktop/placeholder.png`;
   }
-  
-  // Handle regular capture service screenshots.
-  // Files are stored at: vuxi-capture/data/job_{id}/desktop/{filename}
-  // Served by the capture server at: /data/job_{id}/desktop/{filename}
-  const baseUrl = `http://localhost:3001/data/job_${jobId}`;
 
-  // Priority 1: data.path is already relative to the job dir (e.g. "desktop/filename.png")
+  // Priority 3: Explicit path/filename fields
   if (screenshotData.path && typeof screenshotData.path === 'string') {
     return `${baseUrl}/${screenshotData.path}`;
   }
-
-  // Priority 2: build from filename alone
   if (screenshotData.filename && typeof screenshotData.filename === 'string') {
     return `${baseUrl}/desktop/${screenshotData.filename}`;
   }
 
-  // Priority 3: Fallback placeholder
+  // Priority 4: storageUrl as a relative path stored by DB (e.g. "desktop/001_foo.png")
+  if (screenshotData.storageUrl && typeof screenshotData.storageUrl === 'string') {
+    const rel = screenshotData.storageUrl;
+    return rel.startsWith('desktop/') ? `${baseUrl}/${rel}` : `${baseUrl}/desktop/${rel}`;
+  }
+
   return `${baseUrl}/desktop/placeholder.png`;
 };
 

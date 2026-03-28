@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Globe, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { Globe, ExternalLink, RefreshCw } from 'lucide-react';
 import { getScreenshotUrl, getPageDisplayName } from '@/lib/report-utils';
 import type { Screenshot } from '@/types';
 
@@ -12,6 +12,7 @@ interface ScreenshotGridProps {
   onEditClick: (index: number) => void;
   onDeleteClick: (index: number) => void;
   onAddClick: () => void;
+  onRefreshScreenshots?: (url: string, newScreenshots: Screenshot[]) => void;
 }
 
 export function ScreenshotGrid({
@@ -20,7 +21,8 @@ export function ScreenshotGrid({
   onScreenshotClick,
   onEditClick,
   onDeleteClick,
-  onAddClick
+  onAddClick,
+  onRefreshScreenshots
 }: ScreenshotGridProps) {
   // Group screenshots by URL so multiple interaction states of the same page
   // are shown as a single card. Prefer the baseline/standard image for the preview.
@@ -57,9 +59,11 @@ export function ScreenshotGrid({
             pageName={pageName}
             index={primaryIndex}
             interactionCount={count}
+            captureJobId={captureJobId}
             onScreenshotClick={onScreenshotClick}
             onEditClick={onEditClick}
             onDeleteClick={onDeleteClick}
+            onRefreshScreenshots={onRefreshScreenshots}
           />
         );
       })}
@@ -75,21 +79,85 @@ interface ScreenshotCardProps {
   pageName: string;
   index: number;
   interactionCount?: number;
+  captureJobId: string;
   onScreenshotClick: (index: number) => void;
   onEditClick: (index: number) => void;
   onDeleteClick: (index: number) => void;
+  onRefreshScreenshots?: (url: string, newScreenshots: Screenshot[]) => void;
 }
 
 function ScreenshotCard({
   screenshot,
-  imageUrl,
+  imageUrl: initialImageUrl,
   pageName,
   index,
   interactionCount = 1,
+  captureJobId,
   onScreenshotClick,
   onEditClick,
-  onDeleteClick
+  onDeleteClick,
+  onRefreshScreenshots
 }: ScreenshotCardProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [liveImageUrl, setLiveImageUrl] = useState(initialImageUrl);
+
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!captureJobId || isRefreshing) return;
+
+    setIsRefreshing(true);
+    try {
+      const res = await fetch('/api/capture/refresh-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: screenshot.url, jobId: captureJobId }),
+      });
+
+      if (!res.ok) throw new Error('Refresh failed');
+
+      const data = await res.json();
+
+      // Build the fresh screenshot objects (base + any interactions)
+      const freshScreenshots: Screenshot[] = [
+        {
+          url: screenshot.url,
+          success: true,
+          data: {
+            url: screenshot.url,
+            filename: data.filename,
+            path: data.path,
+            timestamp: data.timestamp,
+          },
+        },
+        ...(data.interactions ?? [])
+          .filter((i: { status: string }) => i.status === 'captured')
+          .map((i: { filename: string; path?: string }) => ({
+            url: screenshot.url,
+            success: true,
+            data: {
+              url: screenshot.url,
+              filename: i.filename,
+              path: i.path ?? `desktop/${i.filename}`,
+              timestamp: data.timestamp,
+            },
+          })),
+      ];
+
+      // Update the preview image immediately
+      const newUrl = `http://localhost:3001/data/job_${captureJobId}/${data.path}`;
+      setLiveImageUrl(newUrl);
+
+      // Propagate the new screenshots up to the parent so the array stays in sync
+      onRefreshScreenshots?.(screenshot.url, freshScreenshots);
+    } catch (err) {
+      console.error('Failed to refresh screenshot:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const imageUrl = liveImageUrl;
+
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow group relative">
       {/* URL Title */}
@@ -105,7 +173,7 @@ function ScreenshotCard({
             disabled={!screenshot.url.startsWith('http')}
             className={`flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center transition-all ${
               screenshot.url.startsWith('http')
-                ? 'hover:bg-blue-200 hover:scale-105 cursor-pointer' 
+                ? 'hover:bg-blue-200 hover:scale-105 cursor-pointer'
                 : 'opacity-50 cursor-not-allowed'
             }`}
             title={
@@ -121,6 +189,16 @@ function ScreenshotCard({
               {pageName}
             </h3>
           </div>
+          {captureJobId && (
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Recapture this page"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
         </div>
       </div>
 

@@ -225,31 +225,33 @@ export function useWizardState() {
           setAnalyzing(false);
 
           if (jobData.results?.reportData) {
-            // Strip base64 screenshots before storing — too large for sessionStorage
-            const { screenshots: _screenshots, ...reportWithoutScreenshots } = jobData.results.reportData;
-            sessionStorage.setItem('liveReportData', JSON.stringify(reportWithoutScreenshots));
-            // Store captureJobId separately so the report page can load screenshots directly
-            if (state.analysisData.captureJobId) {
-              sessionStorage.setItem('liveCaptureJobId', state.analysisData.captureJobId);
-            }
-
-            // Save report to database
+            // Save report to database, then redirect to the saved report page
             const captureJobId = state.analysisData.captureJobId;
             if (captureJobId) {
-              fetch('/api/analysis/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  captureJobId,
-                  reportData: jobData.results.reportData,
-                  overallScore: jobData.results.reportData?.overall_summary?.overall_score ?? null,
-                }),
-              }).catch(err => console.error('Failed to save report to DB:', err));
+              try {
+                const saveRes = await fetch('/api/analysis/save', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    captureJobId,
+                    reportData: jobData.results.reportData,
+                    overallScore: jobData.results.reportData?.overall_summary?.overall_score ?? null,
+                  }),
+                });
+                if (saveRes.ok) {
+                  const { analysisRunId } = await saveRes.json();
+                  window.location.href = `/report/${analysisRunId}`;
+                  return;
+                }
+              } catch (err) {
+                console.error('Failed to save report to DB:', err);
+              }
             }
-
-            setTimeout(() => {
-              window.location.href = '/report/live';
-            }, 100);
+            // Fallback: use sessionStorage if DB save failed
+            const { screenshots: _screenshots, ...reportWithoutScreenshots } = jobData.results.reportData;
+            sessionStorage.setItem('liveReportData', JSON.stringify(reportWithoutScreenshots));
+            if (captureJobId) sessionStorage.setItem('liveCaptureJobId', captureJobId);
+            window.location.href = '/report/live';
           } else {
             setCurrentStep(7);
           }
@@ -347,6 +349,18 @@ export function useWizardState() {
     setCurrentStep(6);
 
     try {
+      // Persist any screenshots added/modified at the review step before analysis starts
+      if (state.analysisData.captureJobId && state.analysisData.screenshots?.length) {
+        fetch('/api/capture/sync-screenshots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            captureJobId: state.analysisData.captureJobId,
+            screenshots: state.analysisData.screenshots,
+          }),
+        }).catch((err) => console.warn('Screenshot sync failed (non-blocking):', err));
+      }
+
       const response = await fetch('/api/start-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

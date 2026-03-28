@@ -82,18 +82,16 @@ interface ReportData {
 }
 
 // --- Helper Functions from original Index.tsx ---
-const fetchReportData = async (reportId: string | undefined): Promise<ReportData> => {
+const fetchReportData = async (reportId: string | undefined): Promise<ReportData & { captureJobId?: string }> => {
     if (!reportId) {
         throw new Error("Report ID is undefined. Cannot fetch report data.");
     }
-    const dataPath = `/all_analysis_runs/${reportId}/report-data.json`;
-    const response = await fetch(dataPath);
+    const response = await fetch(`/api/reports/${reportId}`);
 
     if (!response.ok) {
-        throw new Error(`Network response was not ok for report ${reportId}`);
+        throw new Error(`Report not found (${response.status})`);
     }
-    // Add data sanitization/defaulting logic from original file
-    const data = await response.json();
+    const { reportData: data, captureJobId } = await response.json();
     if (!data.overall_summary) {
         data.overall_summary = {
             executive_summary: "Executive summary not available.",
@@ -107,6 +105,7 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
     if (!data.page_analyses) {
         data.page_analyses = [];
     }
+    data.captureJobId = captureJobId;
     return data;
 };
 
@@ -347,7 +346,20 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
         }
     }, [parsedDetailedSections, activeDetailedTab, sectionDetails]);
     
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading Report...</div>;
+    if (isLoading) return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+            <div className="flex flex-col items-center gap-6">
+                <div className="relative h-16 w-16">
+                    <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
+                    <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+                </div>
+                <div className="text-center space-y-1">
+                    <p className="text-lg font-semibold text-slate-800">Loading Report</p>
+                    <p className="text-sm text-slate-500">Fetching your analysis results...</p>
+                </div>
+            </div>
+        </div>
+    );
     if (isError) return <div className="min-h-screen flex items-center justify-center">Error: {error.message}</div>;
     if (!reportData) return <div className="min-h-screen flex items-center justify-center">No report data found.</div>;
 
@@ -357,7 +369,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-10">
-                    <Link href="/reports" className="inline-flex items-center gap-3 text-slate-600 hover:text-blue-600 font-medium group">
+                    <Link href="/dashboard" className="inline-flex items-center gap-3 text-slate-600 hover:text-blue-600 font-medium group">
                         <Home className="w-5 h-5" /> All Reports
                     </Link>
                 </div>

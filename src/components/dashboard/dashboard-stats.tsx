@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
+import { FileText, Clock, CheckCircle2 } from "lucide-react";
 
 interface DashboardStatsProps {
   stats: {
@@ -12,6 +12,20 @@ interface DashboardStatsProps {
   };
 }
 
+function formatLastAnalysis(value?: string): string {
+  if (!value) return "None";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  if (isToday) return "Today";
+  if (isYesterday) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 export function DashboardStats({ stats }: DashboardStatsProps) {
   const statCards = [
     {
@@ -20,15 +34,9 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       icon: FileText,
       color: "text-blue-600 bg-blue-100"
     },
-    {
-      title: "Average Score",
-      value: stats.totalReports === 0 ? "N/A" : `${stats.avgScore.toFixed(1)}/10`,
-      icon: TrendingUp,
-      color: "text-green-600 bg-green-100"
-    },
-    {
+{
       title: "Last Analysis",
-      value: stats.lastAnalysis || "None",
+      value: formatLastAnalysis(stats.lastAnalysis),
       icon: Clock,
       color: "text-orange-600 bg-orange-100"
     },
@@ -41,7 +49,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   ];
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div className="grid gap-6 md:grid-cols-3 mb-8">
       {statCards.map((stat) => {
         const IconComponent = stat.icon;
         return (

@@ -49,6 +49,7 @@ export interface ScreenshotData {
   url?: string;
   filename?: string;
   path?: string;
+  storageUrl?: string;
   timestamp?: string;
   duration_ms?: number;
   viewport?: {

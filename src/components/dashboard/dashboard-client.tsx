@@ -3,7 +3,8 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ExternalLink, Calendar, Building2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play } from 'lucide-react';
 import { FormattedDate } from '@/components/common';
 import { QuickActions, DashboardStats } from '@/components/dashboard';
 import Link from 'next/link';
@@ -74,16 +75,149 @@ function getProjectStatus(project: Project): {
   }
 }
 
-function ProjectCard({ project }: { project: Project }) {
-  const { status, icon, iconColor } = getProjectStatus(project);
+function getScoreColor(score: number): string {
+  if (score >= 8) return 'text-green-600';
+  if (score >= 6) return 'text-yellow-600';
+  return 'text-red-500';
+}
+
+function ScoreTrend({ runs }: { runs: AnalysisRun[] }) {
+  const scored = runs.filter(r => r.overallScore != null && r.status === 'completed').slice().reverse();
+  if (scored.length < 2) return null;
+  const first = scored[0].overallScore!;
+  const last = scored[scored.length - 1].overallScore!;
+  const diff = last - first;
+  if (diff === 0) return null;
+  return (
+    <span className={`flex items-center gap-1 text-xs font-medium ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+      <TrendingUp className={`h-3 w-3 ${diff < 0 ? 'rotate-180' : ''}`} />
+      {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+    </span>
+  );
+}
+
+function RunRow({ run, isLatest, reportHref, onDeleted }: {
+  run: AnalysisRun;
+  isLatest: boolean;
+  reportHref: string | null;
+  onDeleted: (id: number) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      onDeleted(run.id);
+    } finally {
+      setDeleting(false);
+      setConfirming(false);
+    }
+  };
 
   return (
-    <Card className="w-full bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-slate-500">
+          <FormattedDate dateString={run.createdAt} />
+        </span>
+        {isLatest && (
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Latest</span>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        {run.overallScore != null && (
+          <span className={`text-sm font-semibold ${getScoreColor(run.overallScore)}`}>
+            {run.overallScore}/10
+          </span>
+        )}
+        <span className={`text-xs font-medium ${
+          run.status === 'completed' ? 'text-green-600' :
+          run.status === 'failed' || run.status === 'error' ? 'text-red-500' :
+          'text-orange-500'
+        }`}>
+          {run.status === 'completed' ? 'Completed' :
+           run.status === 'failed' || run.status === 'error' ? 'Failed' : 'Pending'}
+        </span>
+        {reportHref ? (
+          <Button asChild size="sm" variant="outline" className="h-7 text-xs px-3">
+            <Link href={reportHref}>View</Link>
+          </Button>
+        ) : (
+          <div className="w-[52px]" />
+        )}
+        {confirming ? (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="h-7 text-xs px-2"
+            >
+              {deleting ? '...' : 'Delete'}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirming(false)}
+              className="h-7 text-xs px-2"
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setConfirming(true)}
+            className="h-7 w-7 p-0 text-slate-300 hover:text-red-500 hover:bg-red-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: (id: number) => void }) {
+  const { status, icon, iconColor } = getProjectStatus(project);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [runs, setRuns] = useState<AnalysisRun[]>(project.analysisRuns || []);
+
+  const latestCompletedRun = runs.find(run => run.status === 'completed');
+  const reportHref = latestCompletedRun ? `/report/${latestCompletedRun.id}` : null;
+  const hasMultipleRuns = runs.length > 1;
+
+  const handleRunDeleted = async (runId: number) => {
+    const res = await fetch(`/api/reports/${runId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setRuns(prev => prev.filter(r => r.id !== runId));
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        onDeleted(project.id);
+      }
+    } finally {
+      setDeleting(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <Card className="w-full bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-lg hover:shadow-xl transition-all duration-300">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           {/* Left side - Project info */}
           <div className="flex-1 space-y-3">
-            {/* Title and URL */}
             <div className="space-y-1">
               <h3 className="text-xl font-semibold text-slate-900 line-clamp-1">
                 {project.orgName || project.name}
@@ -93,25 +227,110 @@ function ProjectCard({ project }: { project: Project }) {
                 <span className="line-clamp-1">{project.baseUrl}</span>
               </div>
             </div>
-
-            {/* Created date */}
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <Calendar className="h-3 w-3" />
-              <span>Created: <FormattedDate dateString={project.createdAt} /></span>
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Created: <FormattedDate dateString={project.createdAt} />
+              </span>
+              {runs.length > 0 && (
+                <span className="text-slate-400">·</span>
+              )}
+              {runs.length > 0 && (
+                <span>{runs.length} report{runs.length === 1 ? '' : 's'}</span>
+              )}
+              <ScoreTrend runs={runs} />
             </div>
           </div>
 
-          {/* Right side - Status */}
+          {/* Right side - Status + View Report + Delete */}
           <div className="flex items-center gap-4 ml-6">
-            {/* Status indicator */}
             <div className="flex items-center gap-2">
               {icon}
-              <span className={`text-sm font-medium ${iconColor}`}>
-                {status}
-              </span>
+              <span className={`text-sm font-medium ${iconColor}`}>{status}</span>
             </div>
+
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <Link href={`/create-analysis?url=${encodeURIComponent(project.baseUrl)}&projectId=${project.id}`}>
+                <Play className="h-3 w-3 mr-1" />
+                Run Analysis
+              </Link>
+            </Button>
+
+            {reportHref && (
+              <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                <Link href={reportHref}>
+                  View Latest
+                </Link>
+              </Button>
+            )}
+
+            {hasMultipleRuns && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setExpanded(!expanded)}
+                className="h-8 px-2 text-slate-500 hover:text-slate-700"
+              >
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <span className="ml-1 text-xs">History</span>
+              </Button>
+            )}
+
+            {confirming ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Delete project?</span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="h-7 text-xs px-2"
+                >
+                  {deleting ? 'Deleting...' : 'Yes, delete'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirming(false)}
+                  className="h-7 text-xs px-2"
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setConfirming(true)}
+                className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Report history */}
+        {expanded && hasMultipleRuns && (
+          <div className="mt-5 pt-5 border-t border-slate-100">
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Analysis History</h4>
+            <div className="space-y-2">
+              {runs.map((run, index) => {
+                const isLatest = index === 0;
+                const runReportHref = run.status === 'completed' ? `/report/${run.id}` : null;
+                return (
+                  <RunRow
+                    key={run.id}
+                    run={run}
+                    isLatest={isLatest}
+                    reportHref={runReportHref}
+                    onDeleted={handleRunDeleted}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -144,7 +363,13 @@ function CreateProjectCard() {
   );
 }
 
-export function DashboardClient({ projects = [] }: DashboardClientProps) {
+export function DashboardClient({ projects: initialProjects = [] }: DashboardClientProps) {
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+
+  const handleProjectDeleted = (id: number) => {
+    setProjects(prev => prev.filter(p => p.id !== id));
+  };
+
   // Calculate stats from projects
   const stats = {
     totalReports: projects.reduce((acc, project) => acc + (project.analysisRuns?.length || 0), 0),
@@ -192,36 +417,19 @@ export function DashboardClient({ projects = [] }: DashboardClientProps) {
                 {projects.length > 0 ? 'Your Projects' : 'Get Started'}
               </h2>
               <p className="text-slate-600 mt-1">
-                {projects.length > 0 
-                  ? `Manage and view your ${projects.length} project${projects.length === 1 ? '' : 's'}`
+                {projects.length > 0
+                  ? `${projects.length} website${projects.length === 1 ? '' : 's'} · ${projects.reduce((acc, p) => acc + (p.analysisRuns?.length || 0), 0)} total report${projects.reduce((acc, p) => acc + (p.analysisRuns?.length || 0), 0) === 1 ? '' : 's'}`
                   : 'Create your first UX analysis project'
                 }
               </p>
             </div>
-            {projects.length > 0 && (
-              <Button asChild>
-                <Link href="/analysis">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Analysis
-                </Link>
-              </Button>
-            )}
           </div>
 
           {/* Project List - Full Width Cards */}
           <div className="space-y-4">
-            {projects.length === 0 ? (
-              <div className="max-w-4xl mx-auto">
-                <CreateProjectCard />
-              </div>
-            ) : (
-              <>
-                {projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
-                <CreateProjectCard />
-              </>
-            )}
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} onDeleted={handleProjectDeleted} />
+            ))}
           </div>
         </div>
 

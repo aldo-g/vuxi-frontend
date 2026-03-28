@@ -24,7 +24,7 @@ import remarkGfm from 'remark-gfm';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, ImageOff, MessageSquareHeart } from "lucide-react";
+import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, ImageOff, MessageSquareHeart, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { FormattedDate } from "@/components/common/formatted-date";
 
 // --- Interfaces and Helper Functions ---
@@ -90,12 +90,56 @@ interface ReportData {
   overall_summary: OverallSummary;
   page_analyses: PageAnalysisDetail[];
   metadata?: ReportMetadata;
+  screenshots?: { [filename: string]: string };
 }
+
+const normalizeReportData = (data: ReportData): ReportData => {
+  if (!data.overall_summary) {
+    data.overall_summary = {
+      executive_summary: "Executive summary not available.",
+      overall_score: 0,
+      site_score_explanation: "Site score explanation not available.",
+      total_pages_analyzed: data.page_analyses?.length || 0,
+      most_critical_issues: [],
+      top_recommendations: [],
+      key_strengths: [],
+      performance_summary: "Performance summary not available.",
+      detailed_markdown_content: "# Overview Not Available\n\nThe detailed overview content could not be loaded."
+    };
+  } else {
+    data.overall_summary = {
+      executive_summary: data.overall_summary.executive_summary || "Executive summary not available.",
+      overall_score: typeof data.overall_summary.overall_score === 'number' ? data.overall_summary.overall_score : 0,
+      site_score_explanation: data.overall_summary.site_score_explanation || "Site score explanation not available.",
+      total_pages_analyzed: typeof data.overall_summary.total_pages_analyzed === 'number' ? data.overall_summary.total_pages_analyzed : (data.page_analyses?.length || 0),
+      most_critical_issues: Array.isArray(data.overall_summary.most_critical_issues) ? data.overall_summary.most_critical_issues : [],
+      top_recommendations: Array.isArray(data.overall_summary.top_recommendations) ? data.overall_summary.top_recommendations : [],
+      key_strengths: Array.isArray(data.overall_summary.key_strengths) ? data.overall_summary.key_strengths : [],
+      performance_summary: data.overall_summary.performance_summary || "Performance summary not available.",
+      detailed_markdown_content: data.overall_summary.detailed_markdown_content || "# Overview Not Available\n\nThe detailed overview content could not be loaded."
+    };
+  }
+  if (!Array.isArray(data.page_analyses)) {
+    data.page_analyses = [];
+  }
+  return data;
+};
 
 const fetchReportData = async (reportId: string | undefined): Promise<ReportData> => {
   if (!reportId) {
     throw new Error("Report ID is undefined. Cannot fetch report data.");
   }
+
+  // Numeric IDs are DB-backed reports; string IDs are legacy static file reports
+  if (/^\d+$/.test(reportId)) {
+    const response = await fetch(`/api/reports/${reportId}`);
+    if (!response.ok) {
+      throw new Error(`Report not found (${response.status})`);
+    }
+    const { reportData: data } = await response.json();
+    return normalizeReportData(data);
+  }
+
   const dataPath = `/all_analysis_runs/${reportId}/report-data.json`;
   const response = await fetch(dataPath);
   if (!response.ok) {
@@ -105,35 +149,7 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
   }
   try {
     const data = await response.json();
-    if (!data.overall_summary) {
-      data.overall_summary = {
-        executive_summary: "Executive summary not available.",
-        overall_score: 0,
-        site_score_explanation: "Site score explanation not available.",
-        total_pages_analyzed: data.page_analyses?.length || 0,
-        most_critical_issues: [],
-        top_recommendations: [],
-        key_strengths: [],
-        performance_summary: "Performance summary not available.",
-        detailed_markdown_content: "# Overview Not Available\n\nThe detailed overview content could not be loaded."
-      };
-    } else {
-      data.overall_summary = {
-        executive_summary: data.overall_summary.executive_summary || "Executive summary not available.",
-        overall_score: typeof data.overall_summary.overall_score === 'number' ? data.overall_summary.overall_score : 0,
-        site_score_explanation: data.overall_summary.site_score_explanation || "Site score explanation not available.",
-        total_pages_analyzed: typeof data.overall_summary.total_pages_analyzed === 'number' ? data.overall_summary.total_pages_analyzed : (data.page_analyses?.length || 0),
-        most_critical_issues: Array.isArray(data.overall_summary.most_critical_issues) ? data.overall_summary.most_critical_issues : [],
-        top_recommendations: Array.isArray(data.overall_summary.top_recommendations) ? data.overall_summary.top_recommendations : [],
-        key_strengths: Array.isArray(data.overall_summary.key_strengths) ? data.overall_summary.key_strengths : [],
-        performance_summary: data.overall_summary.performance_summary || "Performance summary not available.",
-        detailed_markdown_content: data.overall_summary.detailed_markdown_content || "# Overview Not Available\n\nThe detailed overview content could not be loaded."
-      };
-    }
-    if (!Array.isArray(data.page_analyses)) {
-      data.page_analyses = [];
-    }
-    return data;
+    return normalizeReportData(data);
   } catch (e) {
     console.error(`Failed to parse JSON from ${dataPath}:`, e);
     throw new Error(`Failed to parse report data for ${reportId}.`);
@@ -283,6 +299,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
   const { reportId, pageId } = params;
   const [activeTab, setActiveTab] = useState("tab-detailed");
   const [activeNestedTab, setActiveNestedTab] = useState("role-analysis");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: reportData, isLoading: isLoadingReport, error: reportError, isError: isReportError } = useQuery<ReportData, Error>({
     queryKey: ["reportData", reportId],
@@ -306,6 +323,37 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     }
     return [];
   }, [pageData]);
+
+  // Collect all screenshots for this page from the screenshots map (must be before early returns)
+  const pageScreenshots = useMemo(() => {
+    if (!pageData || !reportData) return [];
+
+    const screenshotsMap = reportData.screenshots;
+
+    const getPrimaryFallback = () => {
+      if (!pageData.screenshot_path) return [];
+      const filename = pageData.screenshot_path.split('/').pop() || '';
+      let src = '';
+      if (screenshotsMap && screenshotsMap[filename]) {
+        src = screenshotsMap[filename];
+      } else {
+        src = `/all_analysis_runs/${reportId}/${pageData.screenshot_path}`;
+      }
+      return [{ filename, src }];
+    };
+
+    if (!screenshotsMap) return getPrimaryFallback();
+
+    let hostname = '';
+    try { hostname = new URL(pageData.url).hostname; } catch { hostname = pageData.url; }
+
+    const matching = Object.entries(screenshotsMap)
+      .filter(([filename]) => filename.includes(hostname))
+      .map(([filename, src]) => ({ filename, src }))
+      .sort((a, b) => a.filename.localeCompare(b.filename));
+
+    return matching.length > 0 ? matching : getPrimaryFallback();
+  }, [reportData, pageData, reportId]);
 
   useEffect(() => {
     if (activeTab === "tab-detailed") {
@@ -395,9 +443,6 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     );
   }
   
-  const actualScreenshotPath = pageData.screenshot_path
-    ? `/all_analysis_runs/${reportId}/${pageData.screenshot_path}`
-    : "";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4 sm:p-8">
@@ -495,7 +540,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   { id: 'tab-issues', label: 'Key Issues', count: pageData.key_issues?.length || 0 },
                   { id: 'tab-recommendations', label: 'Recommendations', count: pageData.recommendations?.length || 0 },
                   { id: 'tab-raw', label: 'Raw LLM Output' },
-                  { id: 'tab-screenshot', label: 'Screenshot' }
+                  { id: 'tab-screenshot', label: 'Screenshot', count: pageScreenshots.length > 1 ? pageScreenshots.length : 0 }
                 ].map((tab) => (
                   <TabsTrigger
                     key={tab.id}
@@ -704,32 +749,86 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
             </TabsContent>
 
             <TabsContent value="tab-screenshot" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
-              <div className="text-center py-6 sm:py-10">
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-6 sm:mb-8">Page Screenshot</h3>
-                {pageData.screenshot_path ? (
-                  <img
-                    src={actualScreenshotPath}
-                    alt={`Screenshot of ${pageData.title}`}
-                    className="max-w-full h-auto rounded-xl border-2 border-slate-200 shadow-2xl mx-auto"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.style.display = 'none';
-                      const fallbackDiv = document.getElementById(`screenshot-fallback-${pageData.id}`);
-                      if (fallbackDiv) fallbackDiv.style.display = 'block';
-                    }}
-                  />
-                ) : null}
-                <div id={`screenshot-fallback-${pageData.id}`} style={{display: !pageData.screenshot_path ? 'block' : 'none'}}
-                     className="text-center py-16 sm:py-20"
-                >
+              {pageScreenshots.length > 0 ? (
+                <>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Page Screenshots</h3>
+                  <p className="text-slate-500 text-sm mb-6">{pageScreenshots.length} capture{pageScreenshots.length !== 1 ? 's' : ''} — click any image to enlarge</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {pageScreenshots.map((shot, i) => {
+                      const label = shot.filename
+                        .replace(/\.\w+$/, '')
+                        .replace(/^\d+_/, '')
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, c => c.toUpperCase());
+                      return (
+                        <button
+                          key={shot.filename}
+                          onClick={() => setLightboxIndex(i)}
+                          className="group relative rounded-xl overflow-hidden border-2 border-slate-200 shadow hover:shadow-lg hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <img
+                            src={shot.src}
+                            alt={label}
+                            className="w-full h-48 object-cover object-top group-hover:scale-[1.02] transition-transform duration-200"
+                          />
+                          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
+                            <p className="text-white text-xs font-medium truncate">{label}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Lightbox */}
+                  {lightboxIndex !== null && (
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                      onClick={() => setLightboxIndex(null)}
+                    >
+                      <button
+                        className="absolute top-4 right-4 text-white/80 hover:text-white"
+                        onClick={() => setLightboxIndex(null)}
+                      >
+                        <X className="w-8 h-8" />
+                      </button>
+                      {lightboxIndex > 0 && (
+                        <button
+                          className="absolute left-4 text-white/80 hover:text-white"
+                          onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+                        >
+                          <ChevronLeft className="w-10 h-10" />
+                        </button>
+                      )}
+                      {lightboxIndex < pageScreenshots.length - 1 && (
+                        <button
+                          className="absolute right-4 text-white/80 hover:text-white"
+                          onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+                        >
+                          <ChevronRight className="w-10 h-10" />
+                        </button>
+                      )}
+                      <div className="max-w-5xl max-h-[90vh] mx-16 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                        <img
+                          src={pageScreenshots[lightboxIndex].src}
+                          alt={pageScreenshots[lightboxIndex].filename}
+                          className="max-h-[80vh] w-auto rounded-xl shadow-2xl object-contain"
+                        />
+                        <p className="text-white/70 text-sm">
+                          {lightboxIndex + 1} / {pageScreenshots.length} — {pageScreenshots[lightboxIndex].filename.replace(/\.\w+$/, '').replace(/^\d+_/, '').replace(/_/g, ' ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-16 sm:py-20">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                     <ImageOff className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">Screenshot Not Available</h3>
-                  <p className="text-slate-600 text-base sm:text-lg">No visual capture is available for this page analysis.</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">Screenshots Not Available</h3>
+                  <p className="text-slate-600 text-base sm:text-lg">No visual captures are available for this page analysis.</p>
                 </div>
-              </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

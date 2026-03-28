@@ -1,11 +1,21 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Bot, FileText, Users } from 'lucide-react';
+import { UserNav } from '@/components/layout/user-nav';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 function VuxiLandingPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch(API_ENDPOINTS.AUTH.ME)
+      .then(res => { if (res.ok) setIsLoggedIn(true); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200">
       {/* Header */}
@@ -17,17 +27,24 @@ function VuxiLandingPage() {
                 Vuxi
               </Link>
             </div>
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/login">
-                <Button variant="ghost">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/create-account">
-                <Button variant="outline">
-                  Sign Up
-                </Button>
-              </Link>
+            <nav className="hidden md:flex space-x-8 items-center">
+              {isLoggedIn ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button variant="ghost">Dashboard</Button>
+                  </Link>
+                  <UserNav />
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost">Sign In</Button>
+                  </Link>
+                  <Link href="/create-account">
+                    <Button variant="outline">Sign Up</Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>

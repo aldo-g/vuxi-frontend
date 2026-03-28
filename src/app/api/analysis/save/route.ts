@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/database';
 
+export async function GET(request: NextRequest) {
+  const captureJobId = request.nextUrl.searchParams.get('captureJobId');
+  if (!captureJobId) {
+    return NextResponse.json({ error: 'Missing captureJobId' }, { status: 400 });
+  }
+  const run = await prisma.analysisRun.findFirst({
+    where: { captureJobId },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, status: true },
+  });
+  if (!run) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  return NextResponse.json({ analysisRunId: run.id, status: run.status });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { captureJobId, reportData, overallScore } = await request.json();

@@ -1,450 +1,464 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Upload, Link, Save, Camera } from 'lucide-react';
+import { X, Upload, Camera, Globe, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import type { Screenshot, ScreenshotData } from '@/types';
 
 interface EditScreenshotModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (screenshot: Screenshot) => void;
-  editingScreenshot?: Screenshot | null; // null for add mode, Screenshot for edit mode
+  onSave: (screenshots: Screenshot[]) => void;
+  editingScreenshot?: Screenshot | null;
   editingIndex?: number;
-  captureJobId: string; // Add this prop
+  captureJobId: string;
 }
 
-export function EditScreenshotModal({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  editingScreenshot, 
+type Tab = 'capture' | 'upload';
+type CaptureState = 'idle' | 'capturing' | 'done' | 'error';
+
+export function EditScreenshotModal({
+  isOpen,
+  onClose,
+  onSave,
+  editingScreenshot,
   editingIndex,
-  captureJobId 
+  captureJobId,
 }: EditScreenshotModalProps) {
-  const [url, setUrl] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>('capture');
+
+  // Capture tab state
+  const [captureUrl, setCaptureUrl] = useState('');
   const [customPageName, setCustomPageName] = useState('');
+  const [captureState, setCaptureState] = useState<CaptureState>('idle');
+  const [capturedScreenshots, setCapturedScreenshots] = useState<Screenshot[]>([]);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+
+  // Upload tab state
+  const [uploadUrl, setUploadUrl] = useState('');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [uploadedImageData, setUploadedImageData] = useState<any>(null); // Store upload API response
-  const [isLoading, setIsLoading] = useState(false);
+  const [uploadedImageData, setUploadedImageData] = useState<{ path: string; filename: string; storageUrl?: string; timestamp?: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState('url');
+  const [isSaving, setIsSaving] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const isEditMode = !!editingScreenshot;
 
-  // Initialize form when modal opens or editing screenshot changes
+  // Reset when modal opens
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && editingScreenshot) {
-        setUrl(editingScreenshot.url);
-        setCustomPageName(editingScreenshot.data?.customPageName || '');
-        
-        // Handle custom screenshots
-        if (editingScreenshot.data?.isCustom) {
-          setActiveTab('upload');
-          
-          // If it has a saved path, we don't need to show dataUrl
-          if (editingScreenshot.data.path) {
-            // This is a properly saved custom screenshot
-            setUploadedImageData({
-              path: editingScreenshot.data.path,
-              filename: editingScreenshot.data.filename || 'custom_screenshot'
-            });
-            // Show a placeholder image or the actual image URL
-            setUploadedImage(editingScreenshot.data.dataUrl || null);
-          } else if (editingScreenshot.data.dataUrl) {
-            // This is an old-style base64 screenshot
-            setUploadedImage(editingScreenshot.data.dataUrl);
-            setUploadedImageData(null);
-          }
-        } else {
-          setActiveTab('url');
-          setUploadedImage(null);
-          setUploadedImageData(null);
-        }
+    if (!isOpen) return;
+
+    setCaptureState('idle');
+    setCapturedScreenshots([]);
+    setCaptureError(null);
+    setIsSaving(false);
+
+    if (isEditMode && editingScreenshot) {
+      if (editingScreenshot.data?.isCustom) {
+        setActiveTab('upload');
+        setUploadUrl(editingScreenshot.url);
+        setUploadedImage(editingScreenshot.data.dataUrl || null);
+        setUploadedImageData(
+          editingScreenshot.data.path
+            ? {
+                path: editingScreenshot.data.path,
+                filename: editingScreenshot.data.filename || 'custom',
+                storageUrl: editingScreenshot.data.storageUrl,
+              }
+            : null
+        );
+        setCustomPageName(editingScreenshot.data.customPageName || '');
+        setCaptureUrl('');
       } else {
-        // Add mode - reset form
-        setUrl('');
-        setCustomPageName('');
+        setActiveTab('capture');
+        setCaptureUrl(editingScreenshot.url);
+        setCustomPageName(editingScreenshot.data?.customPageName || '');
+        setUploadUrl('');
         setUploadedImage(null);
         setUploadedImageData(null);
-        setActiveTab('url');
       }
-      setIsLoading(false);
-      setIsUploading(false);
-    }
-  }, [isOpen, isEditMode, editingScreenshot]);
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      setActiveTab('capture');
+      setCaptureUrl('');
+      setCustomPageName('');
+      setUploadUrl('');
+      setUploadedImage(null);
+      setUploadedImageData(null);
     }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file (PNG, JPG, WebP, etc.)",
-        variant: "destructive"
-      });
+  const handleCapture = async () => {
+    let urlToCapture = captureUrl.trim();
+    if (!urlToCapture) {
+      toast({ title: 'URL required', description: 'Enter a URL to capture', variant: 'destructive' });
+      return;
+    }
+    try { new URL(urlToCapture); } catch {
+      toast({ title: 'Invalid URL', description: 'Enter a valid URL (e.g. https://example.com)', variant: 'destructive' });
+      return;
+    }
+    if (!captureJobId) {
+      toast({ title: 'No capture session', description: 'Cannot capture without an active capture job', variant: 'destructive' });
       return;
     }
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image smaller than 10MB",
-        variant: "destructive"
+    setCaptureState('capturing');
+    setCaptureError(null);
+    setCapturedScreenshots([]);
+
+    try {
+      const res = await fetch('/api/capture/refresh-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: urlToCapture, jobId: captureJobId }),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Capture failed' }));
+        throw new Error(err.error || 'Capture failed');
+      }
+
+      const data = await res.json();
+
+      const results: Screenshot[] = [
+        {
+          url: urlToCapture,
+          success: true,
+          data: {
+            url: urlToCapture,
+            filename: data.filename,
+            path: data.path,
+            timestamp: data.timestamp,
+            customPageName: customPageName.trim() || undefined,
+          },
+        },
+        ...(data.interactions ?? [])
+          .filter((i: { status: string }) => i.status === 'captured')
+          .map((i: { filename: string; path?: string }) => ({
+            url: urlToCapture,
+            success: true,
+            data: {
+              url: urlToCapture,
+              filename: i.filename,
+              path: i.path ?? `desktop/${i.filename}`,
+              timestamp: data.timestamp,
+            },
+          })),
+      ];
+
+      setCapturedScreenshots(results);
+      setCaptureState('done');
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : 'Capture failed');
+      setCaptureState('error');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file type', description: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max size is 10MB', variant: 'destructive' });
       return;
     }
 
     setIsUploading(true);
-
     try {
-      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
       formData.append('captureJobId', captureJobId);
 
-      // Upload file to our API
-      const response = await fetch('/api/upload-screenshot', {
-        method: 'POST',
-        body: formData,
+      const res = await fetch('/api/upload-screenshot', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Upload failed');
+      }
+      const result = await res.json();
+      setUploadedImageData({
+        path: result.path,
+        filename: result.filename,
+        storageUrl: result.storageUrl,
+        timestamp: result.timestamp,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      const uploadResult = await response.json();
-      
-      // Store upload result for later use
-      setUploadedImageData(uploadResult);
-      
-      // Also create a preview URL (temporary base64 for display only)
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setUploadedImage(e.target?.result as string);
-      };
+      reader.onload = (ev) => setUploadedImage(ev.target?.result as string);
       reader.readAsDataURL(file);
-      
-      // Auto-set page name from file name if empty
-      if (!customPageName) {
-        const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        setCustomPageName(fileName);
-      }
 
-      toast({
-        title: "Upload successful",
-        description: "Your screenshot has been uploaded and saved",
-        variant: "default"
-      });
-
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload image",
-        variant: "destructive"
-      });
+      if (!customPageName) setCustomPageName(file.name.replace(/\.[^/.]+$/, ''));
+      toast({ title: 'Upload successful' });
+    } catch (err) {
+      toast({ title: 'Upload failed', description: err instanceof Error ? err.message : 'Failed', variant: 'destructive' });
     } finally {
       setIsUploading(false);
     }
   };
 
-  const validateForm = () => {
-    if (activeTab === 'url') {
-      if (!url.trim()) {
-        toast({
-          title: "URL required",
-          description: "Please enter a valid URL",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // Basic URL validation
-      try {
-        new URL(url);
-      } catch {
-        toast({
-          title: "Invalid URL",
-          description: "Please enter a valid URL (e.g., https://example.com)",
-          variant: "destructive"
-        });
-        return false;
-      }
-    } else if (activeTab === 'upload') {
-      if (!uploadedImageData) {
-        toast({
-          title: "Image required",
-          description: "Please upload an image file",
-          variant: "destructive"
-        });
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleSave = async () => {
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      let newScreenshot: Screenshot;
-
-      if (activeTab === 'upload' && uploadedImageData) {
-        // Custom uploaded image - use the upload API response data
+    if (activeTab === 'capture') {
+      if (captureState !== 'done' || !capturedScreenshots.length) {
+        toast({ title: 'Nothing to save', description: 'Capture a page first', variant: 'destructive' });
+        return;
+      }
+      // Apply custom page name to base screenshot if provided
+      const named = capturedScreenshots.map((s, i) =>
+        i === 0 && customPageName.trim()
+          ? { ...s, data: { ...s.data, customPageName: customPageName.trim() } }
+          : s
+      );
+      onSave(named);
+      onClose();
+    } else {
+      if (!uploadedImageData) {
+        toast({ title: 'Image required', description: 'Upload an image first', variant: 'destructive' });
+        return;
+      }
+      setIsSaving(true);
+      try {
         const screenshotData: ScreenshotData = {
           isCustom: true,
-          path: uploadedImageData.path, // This will be like "uploads/screenshots/{captureJobId}/{filename}"
+          path: uploadedImageData.path,
           filename: uploadedImageData.filename,
-          customPageName: customPageName.trim() || uploadedImageData.filename.replace(/\.[^/.]+$/, ""),
+          storageUrl: uploadedImageData.storageUrl,
+          customPageName: customPageName.trim() || uploadedImageData.filename.replace(/\.[^/.]+$/, ''),
           timestamp: uploadedImageData.timestamp,
-          viewport: { width: 1920, height: 1080 }, // Default viewport for custom images
-          // Note: We don't store dataUrl in the final data to keep JSON clean
+          viewport: { width: 1920, height: 1080 },
         };
-
-        newScreenshot = {
-          url: url.trim() || customPageName.trim() || 'Custom Screenshot',
+        const screenshot: Screenshot = {
+          url: uploadUrl.trim() || customPageName.trim() || 'Custom Screenshot',
           success: true,
           data: screenshotData,
-          error: null
+          error: null,
         };
-      } else {
-        // URL-based screenshot (placeholder for now - could be enhanced to actually capture)
-        const screenshotData: ScreenshotData = {
-          isCustom: false,
-          customPageName: customPageName.trim() || undefined,
-          timestamp: new Date().toISOString(),
-          viewport: { width: 1920, height: 1080 }
-        };
-
-        newScreenshot = {
-          url: url.trim(),
-          success: true,
-          data: screenshotData,
-          error: null
-        };
+        onSave([screenshot]);
+        onClose();
+        toast({ title: isEditMode ? 'Screenshot updated' : 'Screenshot added' });
+      } finally {
+        setIsSaving(false);
       }
-
-      onSave(newScreenshot);
-      onClose();
-
-      toast({
-        title: isEditMode ? "Screenshot updated" : "Screenshot added",
-        description: isEditMode 
-          ? "Your changes have been saved successfully" 
-          : "New screenshot has been added to your analysis",
-        variant: "default"
-      });
-
-    } catch (error) {
-      console.error('Error saving screenshot:', error);
-      toast({
-        title: "Save failed",
-        description: "There was an error saving the screenshot. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!isLoading) {
-      onClose();
     }
   };
 
   if (!isOpen) return null;
 
+  const canSave =
+    (activeTab === 'capture' && captureState === 'done' && capturedScreenshots.length > 0) ||
+    (activeTab === 'upload' && !!uploadedImageData);
+
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg bg-white">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl">
-              {isEditMode ? `Edit Screenshot` : 'Add New Screenshot'}
+              {isEditMode ? 'Edit Screenshot' : 'Add New Screenshot'}
             </CardTitle>
-            <Button
-              onClick={handleClose}
-              variant="ghost"
-              size="icon"
-              disabled={isLoading}
-              className="h-8 w-8"
-            >
+            <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8" disabled={captureState === 'capturing' || isUploading}>
               <X className="w-4 h-4" />
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="url" className="flex items-center gap-2">
-                <Link className="w-4 h-4" />
-                URL Screenshot
-              </TabsTrigger>
-              <TabsTrigger value="upload" className="flex items-center gap-2">
-                <Upload className="w-4 h-4" />
-                Upload Image
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="url" className="space-y-4 mt-6">
-              <div className="space-y-2">
-                <Label htmlFor="url">Website URL</Label>
-                <Input
-                  id="url"
-                  type="url"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-slate-500">
-                  Enter the URL of the page you want to capture
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="upload" className="space-y-4 mt-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Upload Screenshot</Label>
-                  <div 
-                    className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-slate-400 transition-colors cursor-pointer"
-                    onClick={() => !isUploading && fileInputRef.current?.click()}
-                  >
-                    {isUploading ? (
-                      <div className="space-y-3">
-                        <div className="w-12 h-12 mx-auto border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-                        <p className="font-medium">Uploading...</p>
-                        <p className="text-sm text-slate-500">Please wait while we save your image</p>
-                      </div>
-                    ) : uploadedImage ? (
-                      <div className="space-y-3">
-                        <img 
-                          src={uploadedImage} 
-                          alt="Uploaded screenshot" 
-                          className="max-w-full max-h-48 mx-auto rounded border"
-                        />
-                        <Button variant="outline" size="sm" disabled={isUploading}>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Change Image
-                        </Button>
-                        {uploadedImageData && (
-                          <p className="text-xs text-green-600">
-                            ✅ Saved as {uploadedImageData.filename}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <Camera className="w-12 h-12 mx-auto text-slate-400" />
-                        <div>
-                          <p className="font-medium">Click to upload screenshot</p>
-                          <p className="text-sm text-slate-500">PNG, JPG, WebP up to 10MB</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={isLoading}
-                  />
-                </div>
-
-                {uploadedImage && (
-                  <div className="space-y-2">
-                    <Label htmlFor="upload-url">Associated URL (optional)</Label>
-                    <Input
-                      id="upload-url"
-                      type="url"
-                      placeholder="https://example.com"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      disabled={isLoading}
-                    />
-                    <p className="text-xs text-slate-500">
-                      The URL this screenshot represents
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Custom Page Name - Available for both tabs */}
-          <div className="space-y-2">
-            <Label htmlFor="pageName">Page Name (optional)</Label>
-            <Input
-              id="pageName"
-              placeholder="e.g., Homepage, About Page, Product Details"
-              value={customPageName}
-              onChange={(e) => setCustomPageName(e.target.value)}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-slate-500">
-              Custom name for this page in your analysis
-            </p>
+        <CardContent className="space-y-5">
+          {/* Tab selector */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg">
+            <button
+              onClick={() => setActiveTab('capture')}
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                activeTab === 'capture'
+                  ? 'bg-white shadow-sm text-slate-900'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              Capture URL
+            </button>
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                activeTab === 'upload'
+                  ? 'bg-white shadow-sm text-slate-900'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Upload className="w-4 h-4" />
+              Upload Image
+            </button>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t">
-            <Button 
-              onClick={handleClose} 
-              variant="outline" 
-              className="flex-1"
-              disabled={isLoading}
-            >
+          {/* Capture URL tab */}
+          {activeTab === 'capture' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="capture-url">Page URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="capture-url"
+                    type="url"
+                    placeholder="https://example.com/about"
+                    value={captureUrl}
+                    onChange={(e) => {
+                      setCaptureUrl(e.target.value);
+                      if (captureState !== 'idle') {
+                        setCaptureState('idle');
+                        setCapturedScreenshots([]);
+                      }
+                    }}
+                    disabled={captureState === 'capturing'}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCapture()}
+                  />
+                  <Button
+                    onClick={handleCapture}
+                    disabled={captureState === 'capturing' || !captureUrl.trim()}
+                    className="shrink-0"
+                  >
+                    {captureState === 'capturing' ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
+                    <span className="ml-2">{captureState === 'capturing' ? 'Capturing…' : 'Capture'}</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Captures a full-page screenshot including any interactive states
+                </p>
+              </div>
+
+              {/* Capture result */}
+              {captureState === 'capturing' && (
+                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700">
+                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                  <span className="text-sm">Launching browser and capturing page…</span>
+                </div>
+              )}
+
+              {captureState === 'done' && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-1">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="text-sm font-medium">
+                      Captured {capturedScreenshots.length} screenshot{capturedScreenshots.length !== 1 ? 's' : ''}
+                      {capturedScreenshots.length > 1 ? ` (1 base + ${capturedScreenshots.length - 1} interaction state${capturedScreenshots.length - 1 !== 1 ? 's' : ''})` : ''}
+                    </span>
+                  </div>
+                  <p className="text-xs text-green-600 ml-6">
+                    Preview the image at the top of the page after saving
+                  </p>
+                </div>
+              )}
+
+              {captureState === 'error' && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Capture failed</p>
+                    <p className="text-xs mt-0.5">{captureError}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="capture-page-name">Page Name (optional)</Label>
+                <Input
+                  id="capture-page-name"
+                  placeholder="e.g. About Page, Pricing, Contact"
+                  value={customPageName}
+                  onChange={(e) => setCustomPageName(e.target.value)}
+                  disabled={captureState === 'capturing'}
+                />
+                <p className="text-xs text-slate-500">Label shown in the analysis report</p>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Image tab */}
+          {activeTab === 'upload' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Screenshot Image</Label>
+                <div
+                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors cursor-pointer"
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                >
+                  {isUploading ? (
+                    <div className="space-y-2">
+                      <div className="w-10 h-10 mx-auto border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-slate-600">Uploading…</p>
+                    </div>
+                  ) : uploadedImage ? (
+                    <div className="space-y-3">
+                      <img src={uploadedImage} alt="Preview" className="max-w-full max-h-40 mx-auto rounded border" />
+                      <Button variant="outline" size="sm" type="button">
+                        <Upload className="w-3.5 h-3.5 mr-2" />
+                        Change Image
+                      </Button>
+                      {uploadedImageData && (
+                        <p className="text-xs text-green-600">Saved as {uploadedImageData.filename}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Camera className="w-10 h-10 mx-auto text-slate-400" />
+                      <p className="text-sm font-medium text-slate-700">Click to upload screenshot</p>
+                      <p className="text-xs text-slate-500">PNG, JPG, WebP · max 10MB</p>
+                    </div>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="upload-url">Associated URL (optional)</Label>
+                <Input
+                  id="upload-url"
+                  type="url"
+                  placeholder="https://example.com"
+                  value={uploadUrl}
+                  onChange={(e) => setUploadUrl(e.target.value)}
+                />
+                <p className="text-xs text-slate-500">The page this screenshot represents</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="upload-page-name">Page Name (optional)</Label>
+                <Input
+                  id="upload-page-name"
+                  placeholder="e.g. Homepage, Checkout"
+                  value={customPageName}
+                  onChange={(e) => setCustomPageName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2 border-t">
+            <Button onClick={onClose} variant="outline" className="flex-1" disabled={captureState === 'capturing' || isUploading}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleSave} 
-              className="flex-1"
-              disabled={isLoading || isUploading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Saving...
-                </>
+            <Button onClick={handleSave} className="flex-1" disabled={!canSave || isSaving || captureState === 'capturing' || isUploading}>
+              {isSaving ? (
+                <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Saving…</>
               ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  {isEditMode ? 'Save Changes' : 'Add Screenshot'}
-                </>
+                isEditMode ? 'Save Changes' : `Add Screenshot${captureState === 'done' && capturedScreenshots.length > 1 ? `s (${capturedScreenshots.length})` : ''}`
               )}
             </Button>
           </div>
