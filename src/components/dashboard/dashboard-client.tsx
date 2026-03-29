@@ -244,6 +244,14 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: (id:
 
           {/* Right side - Status + View Report + Delete */}
           <div className="flex items-center gap-4 ml-6">
+            {latestCompletedRun?.overallScore != null && (
+              <div className="text-right">
+                <div className={`text-lg font-bold ${getScoreColor(latestCompletedRun.overallScore)}`}>
+                  {latestCompletedRun.overallScore}/10
+                </div>
+                <div className="text-xs text-slate-400">Score</div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               {icon}
               <span className={`text-sm font-medium ${iconColor}`}>{status}</span>

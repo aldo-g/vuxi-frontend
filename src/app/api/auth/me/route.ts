@@ -21,7 +21,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId as number },
-      select: { id: true, email: true, Name: true, createdAt: true },
+      select: { id: true, email: true, Name: true, credits: true, createdAt: true },
     });
 
     if (!user) {

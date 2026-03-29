@@ -344,6 +344,12 @@ export function useWizardState() {
       return;
     }
 
+    // Check credits before doing anything
+    if (!user || user.credits < 1) {
+      setError('You have no credits remaining. Email alastairegrant@pm.me to get a voucher code.');
+      return;
+    }
+
     setAnalyzing(true);
     setError(null);
     setCurrentStep(6);
@@ -374,8 +380,14 @@ export function useWizardState() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to start analysis: ${errorText}`);
+        let errorMessage = 'Failed to start analysis';
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMessage = errorData.error;
+        } catch {
+          errorMessage = await response.text() || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

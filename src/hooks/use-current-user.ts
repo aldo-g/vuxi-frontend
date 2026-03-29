@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '@/lib/constants';
 
 interface User {
-  id: number;    // Change from string to number
+  id: number;
   Name: string;
   email: string;
+  credits: number;
 }
 
 export function useCurrentUser() {

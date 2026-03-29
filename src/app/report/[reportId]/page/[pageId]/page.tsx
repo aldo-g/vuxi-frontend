@@ -91,6 +91,7 @@ interface ReportData {
   page_analyses: PageAnalysisDetail[];
   metadata?: ReportMetadata;
   screenshots?: { [filename: string]: string };
+  screenshotsByUrl?: { [url: string]: string[] };
 }
 
 const normalizeReportData = (data: ReportData): ReportData => {
@@ -136,7 +137,9 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
     if (!response.ok) {
       throw new Error(`Report not found (${response.status})`);
     }
-    const { reportData: data } = await response.json();
+    const { reportData: data, screenshots, screenshotsByUrl } = await response.json();
+    if (screenshots) data.screenshots = screenshots;
+    if (screenshotsByUrl) data.screenshotsByUrl = screenshotsByUrl;
     return normalizeReportData(data);
   }
 
@@ -329,6 +332,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     if (!pageData || !reportData) return [];
 
     const screenshotsMap = reportData.screenshots;
+    const screenshotsByUrl = reportData.screenshotsByUrl;
 
     const getPrimaryFallback = () => {
       if (!pageData.screenshot_path) return [];
@@ -341,6 +345,14 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
       }
       return [{ filename, src }];
     };
+
+    // Prefer URL-keyed lookup (covers custom/uploaded screenshots too)
+    if (screenshotsByUrl && screenshotsByUrl[pageData.url]) {
+      return screenshotsByUrl[pageData.url].map((src, i) => ({
+        filename: src.split('/').pop() || `screenshot-${i}`,
+        src,
+      }));
+    }
 
     if (!screenshotsMap) return getPrimaryFallback();
 

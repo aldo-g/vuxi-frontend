@@ -8,12 +8,25 @@ datasource db {
 }
 
 model User {
-  id                 Int      @id @default(autoincrement())
-  Name           String?
-  email              String   @unique // This is the login email
+  id                 Int           @id @default(autoincrement())
+  Name               String?
+  email              String        @unique
   passwordHash       String
-  createdAt          DateTime @default(now())
+  credits            Int           @default(0)
+  createdAt          DateTime      @default(now())
   projects           Project[]
+  redeemedVouchers   VoucherCode[]
+}
+
+model VoucherCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  credits     Int
+  usedById    Int?
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  usedBy      User?     @relation(fields: [usedById], references: [id])
 }
 
 model Project {

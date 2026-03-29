@@ -1,9 +1,30 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import * as jose from "jose";
 import prisma from "@/lib/database";
 
 const ANALYSIS_SERVICE_URL = "http://localhost:3002/api/analysis";
+const CREDITS_PER_ANALYSIS = 1;
 
 export async function POST(request: Request) {
+  // Authenticate
+  const token = cookies().get("token")?.value;
+  if (!token) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  let userId: number;
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    const { payload } = await jose.jwtVerify(token, secret);
+    if (!payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+    userId = payload.userId as number;
+  } catch {
+    return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { analysisData, captureJobId } = body;
@@ -15,11 +36,38 @@ export async function POST(request: Request) {
       );
     }
 
+    // Deduct credit atomically — fails if insufficient balance
+    try {
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { credits: true },
+        });
+
+        if (!user || user.credits < CREDITS_PER_ANALYSIS) {
+          throw new Error("INSUFFICIENT_CREDITS");
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { credits: { decrement: CREDITS_PER_ANALYSIS } },
+        });
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === "INSUFFICIENT_CREDITS") {
+        return NextResponse.json(
+          { error: "Insufficient credits. Redeem a voucher code to run more analyses." },
+          { status: 402 }
+        );
+      }
+      throw err;
+    }
+
     // Update org name and purpose on the project now that the user has confirmed them
-    if (analysisData.userId && analysisData.websiteUrl) {
+    if (analysisData.websiteUrl) {
       await prisma.project.updateMany({
         where: {
-          userId: analysisData.userId,
+          userId,
           baseUrl: analysisData.websiteUrl,
         },
         data: {
@@ -39,6 +87,11 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      // Refund the credit — analysis never started
+      await prisma.user.update({
+        where: { id: userId },
+        data: { credits: { increment: CREDITS_PER_ANALYSIS } },
+      }).catch((err: unknown) => console.error("Failed to refund credit after analysis error:", err));
       return NextResponse.json(
         { error: `Analysis service error: ${errorText}` },
         { status: response.status }
@@ -54,6 +107,11 @@ export async function POST(request: Request) {
       message: result.message,
     });
   } catch (error) {
+    // Refund the credit — something went wrong before analysis could start
+    await prisma.user.update({
+      where: { id: userId },
+      data: { credits: { increment: CREDITS_PER_ANALYSIS } },
+    }).catch((err: unknown) => console.error("Failed to refund credit after unexpected error:", err));
     const message = error instanceof Error ? error.message : "Failed to start analysis";
     console.error("start-analysis route error:", error);
     return NextResponse.json({ error: message }, { status: 500 });
