@@ -283,6 +283,8 @@ function ProjectCard({ project, onDeleted, userCredits }: {
   const [noCreditsOpen, setNoCreditsOpen] = useState(false);
   const [credits, setCredits] = useState(userCredits);
 
+  React.useEffect(() => { setCredits(userCredits); }, [userCredits]);
+
   const latestCompletedRun = runs.find(run => run.status === 'completed');
   const reportHref = latestCompletedRun ? `/report/${latestCompletedRun.id}` : null;
   const hasMultipleRuns = runs.length > 1;

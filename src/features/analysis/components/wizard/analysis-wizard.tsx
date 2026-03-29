@@ -147,9 +147,10 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
   } = useWizardState();
 
   const [savedData, setSavedData] = useState<SavedScreenshotData | null>(null);
-  const [loadingSaved, setLoadingSaved] = useState(false);
   // null = not decided yet, 'saved' = use existing, 'fresh' = recapture
   const [screenshotChoice, setScreenshotChoice] = useState<'saved' | 'fresh' | null>(null);
+  // show choice card immediately when projectId is present, populate count after fetch
+  const [showChoiceCard, setShowChoiceCard] = useState(!!projectId);
 
   // Pre-fill URL if provided
   useEffect(() => {
@@ -161,16 +162,17 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
   // Fetch saved screenshots when projectId is provided
   useEffect(() => {
     if (!projectId) return;
-    setLoadingSaved(true);
     fetch(`/api/projects/${projectId}/screenshots`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data && data.screenshots?.length > 0) {
           setSavedData(data);
+        } else {
+          // No saved screenshots — skip choice card and go straight to wizard
+          setShowChoiceCard(false);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoadingSaved(false));
+      .catch(() => { setShowChoiceCard(false); });
   }, [projectId]);
 
   // When user chooses to use saved screenshots, load them and jump to review step
@@ -288,26 +290,18 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
 
   const progressPercent = ((currentStep - 1) / (WIZARD_STEPS.length - 1)) * 100;
 
-  // Show loading state while fetching saved screenshots
-  if (loadingSaved) {
-    return (
-      <div className="w-full max-w-2xl mx-auto flex items-center justify-center py-24 gap-3 text-slate-500">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        <span>Loading previous screenshots...</span>
-      </div>
-    );
-  }
-
-  // Show choice card if saved screenshots exist and user hasn't decided yet
-  if (savedData && screenshotChoice === null) {
+  // Show choice card if projectId is present and user hasn't decided yet
+  if (showChoiceCard && screenshotChoice === null) {
     return (
       <div className="w-full max-w-2xl mx-auto">
         <Card className="border-slate-200 bg-white shadow-lg">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-2xl font-semibold">Run New Analysis</CardTitle>
             <p className="text-slate-600 mt-2">
-              This project has {savedData.screenshots.length} saved screenshot{savedData.screenshots.length === 1 ? '' : 's'} from a previous capture.
-              Would you like to use them or take fresh ones?
+              {savedData
+                ? <>This project has {savedData.screenshots.length} saved screenshot{savedData.screenshots.length === 1 ? '' : 's'} from a previous capture. Would you like to use them or take fresh ones?</>
+                : <>Would you like to use saved screenshots or take fresh ones?</>
+              }
             </p>
           </CardHeader>
           <CardContent className="space-y-3 pb-8">
@@ -321,7 +315,10 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
               <div>
                 <div className="font-semibold text-slate-900">Use saved screenshots</div>
                 <div className="text-sm text-slate-500 mt-0.5">
-                  Skip recapture and go straight to reviewing the {savedData.screenshots.length} existing screenshot{savedData.screenshots.length === 1 ? '' : 's'}.
+                  {savedData
+                    ? <>Skip recapture and go straight to reviewing the {savedData.screenshots.length} existing screenshot{savedData.screenshots.length === 1 ? '' : 's'}.</>
+                    : <>Skip recapture and go straight to reviewing existing screenshots.</>
+                  }
                 </div>
               </div>
             </button>

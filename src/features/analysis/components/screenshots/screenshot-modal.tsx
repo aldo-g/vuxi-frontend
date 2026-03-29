@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, ExternalLink, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ExternalLink, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getScreenshotUrl } from '@/lib/report-utils';
@@ -13,9 +13,10 @@ interface ScreenshotModalProps {
   isOpen: boolean;
   onClose: () => void;
   captureJobId: string;
+  onDelete?: (index: number) => void;
 }
 
-export function ScreenshotModal({ screenshots, initialIndex, isOpen, onClose, captureJobId }: ScreenshotModalProps) {
+export function ScreenshotModal({ screenshots, initialIndex, isOpen, onClose, captureJobId, onDelete }: ScreenshotModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   const currentScreenshot = screenshots[currentIndex];
@@ -70,6 +71,16 @@ export function ScreenshotModal({ screenshots, initialIndex, isOpen, onClose, ca
   const goToPrevious = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + screenshots.length) % screenshots.length);
   }, [screenshots.length]);
+
+  const handleDelete = () => {
+    if (!onDelete) return;
+    onDelete(currentIndex);
+    if (screenshots.length <= 1) {
+      onClose();
+    } else {
+      setCurrentIndex((prev) => Math.min(prev, screenshots.length - 2));
+    }
+  };
 
   const downloadScreenshot = () => {
     if (currentImageUrl && currentScreenshot) {
@@ -142,6 +153,17 @@ export function ScreenshotModal({ screenshots, initialIndex, isOpen, onClose, ca
               <ExternalLink className="w-5 h-5" />
             </Button>
           </>
+        )}
+        {onDelete && (
+          <Button
+            onClick={handleDelete}
+            variant="ghost"
+            size="icon"
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+            title="Delete screenshot"
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
         )}
       </div>
 

@@ -3,11 +3,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { CheckCircle2, ArrowLeft, Zap, AlertCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle2, ArrowLeft, Zap, AlertCircle, Pencil, Check, X } from 'lucide-react';
 import { ScreenshotGrid } from '../screenshots';
 import { ScreenshotModal } from '../screenshots/screenshot-modal';
 import { EditScreenshotModal } from '../screenshots/edit-screenshot-modal';
-import { AnalysisSummary } from '../analysis-summary';
 import { useToast } from '@/hooks/use-toast';
 import type { ScreenshotReviewProps } from '../../types';
 import type { Screenshot } from '@/types';
@@ -29,7 +30,21 @@ export function ScreenshotReview({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingScreenshot, setEditingScreenshot] = useState<Screenshot | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | undefined>(undefined);
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [draftOrg, setDraftOrg] = useState(organizationName);
+  const [draftPurpose, setDraftPurpose] = useState(sitePurpose);
   const { toast } = useToast();
+
+  const handleSaveConfig = () => {
+    updateAnalysisData({ organizationName: draftOrg, sitePurpose: draftPurpose });
+    setIsEditingConfig(false);
+  };
+
+  const handleCancelConfig = () => {
+    setDraftOrg(organizationName);
+    setDraftPurpose(sitePurpose);
+    setIsEditingConfig(false);
+  };
 
   const handleScreenshotClick = (index: number) => {
     setModalStartIndex(index);
@@ -72,6 +87,19 @@ export function ScreenshotReview({
 
   const handleAddClick = () => {
     setEditingScreenshot(null);
+    setEditingIndex(undefined);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeletePage = (url: string) => {
+    const updated = screenshots.filter((s) => s.url !== url);
+    updateAnalysisData({ screenshots: updated });
+    toast({ title: "Page removed", description: `Removed all screenshots for ${url}` });
+  };
+
+  const handleAddToPage = (url: string) => {
+    // Pre-seed edit modal with the page's URL so user adds a state to that page
+    setEditingScreenshot({ url, success: true, data: { url } });
     setEditingIndex(undefined);
     setIsEditModalOpen(true);
   };
@@ -138,19 +166,65 @@ export function ScreenshotReview({
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onAddClick={handleAddClick}
+            onAddToPage={handleAddToPage}
+            onDeletePage={handleDeletePage}
             onRefreshScreenshots={handleRefreshScreenshots}
           />
         </div>
 
-        {/* Analysis Summary */}
+        {/* Analysis Configuration */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Analysis Configuration</h3>
-          <AnalysisSummary analysisData={{
-            websiteUrl: screenshots[0]?.url || '',
-            organizationName,
-            sitePurpose,
-            screenshots
-          }} />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Analysis Configuration</h3>
+            {!isEditingConfig ? (
+              <Button variant="ghost" size="sm" onClick={() => setIsEditingConfig(true)} className="h-8 text-slate-500 hover:text-slate-900">
+                <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={handleCancelConfig} className="h-8 text-slate-500">
+                  <X className="w-3.5 h-3.5 mr-1" />
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSaveConfig} className="h-8">
+                  <Check className="w-3.5 h-3.5 mr-1" />
+                  Save
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium text-slate-900">Analysis Summary</h4>
+            <div className="text-sm text-slate-600 space-y-2">
+              <p><strong>Website:</strong> {screenshots[0]?.url || ''}</p>
+              <div className="flex items-start gap-2">
+                <strong className="shrink-0 mt-1.5">Organization:</strong>
+                {isEditingConfig ? (
+                  <Input
+                    value={draftOrg}
+                    onChange={e => setDraftOrg(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                ) : (
+                  <span className="mt-1">{organizationName}</span>
+                )}
+              </div>
+              <div className="flex items-start gap-2">
+                <strong className="shrink-0 mt-1.5">Purpose:</strong>
+                {isEditingConfig ? (
+                  <Textarea
+                    value={draftPurpose}
+                    onChange={e => setDraftPurpose(e.target.value)}
+                    className="text-sm min-h-[60px]"
+                  />
+                ) : (
+                  <span className="mt-1">{sitePurpose}</span>
+                )}
+              </div>
+              <p><strong>Pages Captured:</strong> {new Set(screenshots.map(s => s.url)).size}</p>
+            </div>
+          </div>
         </div>
 
         {/* Error display */}
@@ -189,6 +263,7 @@ export function ScreenshotReview({
         isOpen={isModalOpen}
         onClose={closeModal}
         captureJobId={captureJobId}
+        onDelete={handleDeleteClick}
       />
 
       {/* Add/Edit Screenshot Modal */}
