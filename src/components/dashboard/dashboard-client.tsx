@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play } from 'lucide-react';
 import { FormattedDate } from '@/components/common';
 import { QuickActions, DashboardStats } from '@/components/dashboard';
+import { useCurrentUser } from '@/hooks/use-current-user';
 import Link from 'next/link';
 
 interface AnalysisRun {
@@ -373,6 +374,7 @@ function CreateProjectCard() {
 
 export function DashboardClient({ projects: initialProjects = [] }: DashboardClientProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { user } = useCurrentUser();
 
   const handleProjectDeleted = (id: number) => {
     setProjects(prev => prev.filter(p => p.id !== id));
@@ -381,7 +383,7 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
   // Calculate stats from projects
   const stats = {
     totalReports: projects.reduce((acc, project) => acc + (project.analysisRuns?.length || 0), 0),
-    avgScore: projects.length > 0 
+    avgScore: projects.length > 0
       ? projects
           .flatMap(p => p.analysisRuns?.filter(run => run.overallScore) || [])
           .reduce((acc, run, idx, arr) => {
@@ -390,9 +392,10 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
           }, 0) || 0
       : 0,
     lastAnalysis: projects[0]?.analysisRuns?.[0]?.createdAt || projects[0]?.createdAt,
-    completedAnalyses: projects.reduce((acc, project) => 
+    completedAnalyses: projects.reduce((acc, project) =>
       acc + (project.analysisRuns?.filter(run => run.status === 'completed').length || 0), 0
-    )
+    ),
+    credits: user?.credits,
   };
 
   return (
