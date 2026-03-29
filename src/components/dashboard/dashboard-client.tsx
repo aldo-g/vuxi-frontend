@@ -3,8 +3,11 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play } from 'lucide-react';
+import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play, Ticket } from 'lucide-react';
 import { FormattedDate } from '@/components/common';
 import { QuickActions, DashboardStats } from '@/components/dashboard';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -182,12 +185,103 @@ function RunRow({ run, isLatest, reportHref, onDeleted }: {
   );
 }
 
-function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: (id: number) => void }) {
+function NoCreditsDialog({ open, onClose, onRedeemed }: {
+  open: boolean;
+  onClose: () => void;
+  onRedeemed: (newTotal: number) => void;
+}) {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleRedeem = async () => {
+    if (!code.trim()) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch('/api/vouchers/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to redeem voucher.');
+      } else {
+        setSuccess(`${data.creditsAdded} credit${data.creditsAdded !== 1 ? 's' : ''} added!`);
+        onRedeemed(data.totalCredits);
+        setCode('');
+      }
+    } catch {
+      setError('Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) { setCode(''); setError(''); setSuccess(''); onClose(); }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>You need credits to run an analysis</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5 pt-1">
+          <p className="text-sm text-slate-600">
+            Each analysis costs 1 credit. You currently have none.{' '}
+            <a
+              href="mailto:alastairegrant@pm.me?subject=Vuxi beta access"
+              className="text-blue-600 hover:underline"
+            >
+              Email alastairegrant@pm.me
+            </a>{' '}
+            to get a voucher code during the beta.
+          </p>
+
+          <div className="border-t pt-4 space-y-3">
+            <Label htmlFor="nc-voucher-code">Already have a code? Redeem it here</Label>
+            <div className="flex gap-2">
+              <Input
+                id="nc-voucher-code"
+                placeholder="XXXX-XXXX-XXXX"
+                value={code}
+                onChange={e => setCode(e.target.value.toUpperCase())}
+                onKeyDown={e => { if (e.key === 'Enter') handleRedeem(); }}
+              />
+              <Button onClick={handleRedeem} disabled={loading || !code.trim()}>
+                {loading ? '...' : 'Redeem'}
+              </Button>
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            {success && <p className="text-sm text-green-600">{success} You can now run your analysis.</p>}
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ProjectCard({ project, onDeleted, userCredits }: {
+  project: Project;
+  onDeleted: (id: number) => void;
+  userCredits: number;
+}) {
   const { status, icon, iconColor } = getProjectStatus(project);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [runs, setRuns] = useState<AnalysisRun[]>(project.analysisRuns || []);
+  const [noCreditsOpen, setNoCreditsOpen] = useState(false);
+  const [credits, setCredits] = useState(userCredits);
 
   const latestCompletedRun = runs.find(run => run.status === 'completed');
   const reportHref = latestCompletedRun ? `/report/${latestCompletedRun.id}` : null;
@@ -258,12 +352,24 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: (id:
               <span className={`text-sm font-medium ${iconColor}`}>{status}</span>
             </div>
 
-            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
-              <Link href={`/create-analysis?url=${encodeURIComponent(project.baseUrl)}&projectId=${project.id}`}>
-                <Play className="h-3 w-3 mr-1" />
+            {credits > 0 ? (
+              <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                <Link href={`/create-analysis?url=${encodeURIComponent(project.baseUrl)}&projectId=${project.id}`}>
+                  <Play className="h-3 w-3 mr-1" />
+                  Run Analysis
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs text-slate-400 border-slate-200"
+                onClick={() => setNoCreditsOpen(true)}
+              >
+                <Ticket className="h-3 w-3 mr-1" />
                 Run Analysis
-              </Link>
-            </Button>
+              </Button>
+            )}
 
             {reportHref && (
               <Button asChild size="sm" variant="outline" className="h-8 text-xs">
@@ -318,6 +424,12 @@ function ProjectCard({ project, onDeleted }: { project: Project; onDeleted: (id:
             )}
           </div>
         </div>
+
+        <NoCreditsDialog
+          open={noCreditsOpen}
+          onClose={() => setNoCreditsOpen(false)}
+          onRedeemed={(newTotal) => setCredits(newTotal)}
+        />
 
         {/* Report history */}
         {expanded && hasMultipleRuns && (
@@ -374,7 +486,7 @@ function CreateProjectCard() {
 
 export function DashboardClient({ projects: initialProjects = [] }: DashboardClientProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
 
   const handleProjectDeleted = (id: number) => {
     setProjects(prev => prev.filter(p => p.id !== id));
@@ -395,7 +507,7 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
     completedAnalyses: projects.reduce((acc, project) =>
       acc + (project.analysisRuns?.filter(run => run.status === 'completed').length || 0), 0
     ),
-    credits: user?.credits,
+    credits: userLoading ? undefined : (user?.credits ?? 0),
   };
 
   return (
@@ -439,7 +551,7 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
           {/* Project List - Full Width Cards */}
           <div className="space-y-4">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onDeleted={handleProjectDeleted} />
+              <ProjectCard key={project.id} project={project} onDeleted={handleProjectDeleted} userCredits={user?.credits ?? 0} />
             ))}
           </div>
         </div>
