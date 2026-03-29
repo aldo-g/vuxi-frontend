@@ -507,7 +507,6 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
     completedAnalyses: projects.reduce((acc, project) =>
       acc + (project.analysisRuns?.filter(run => run.status === 'completed').length || 0), 0
     ),
-    credits: userLoading ? undefined : (user?.credits ?? 0),
   };
 
   return (

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Ticket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '@/lib/constants';
 
@@ -121,6 +122,16 @@ export function UserNav() {
 
   return (
     <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={openVoucher}
+        className="h-8 text-xs gap-1.5 text-slate-600"
+      >
+        <Ticket className="h-3.5 w-3.5" />
+        {user != null ? `${user.credits} credit${user.credits !== 1 ? 's' : ''}` : 'Credits'}
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">

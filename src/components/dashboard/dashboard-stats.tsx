@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Clock, CheckCircle2, Coins } from "lucide-react";
+import { FileText, Clock, CheckCircle2 } from "lucide-react";
 
 interface DashboardStatsProps {
   stats: {
@@ -9,7 +9,6 @@ interface DashboardStatsProps {
     avgScore: number;
     lastAnalysis?: string;
     completedAnalyses: number;
-    credits?: number;
   };
 }
 
@@ -47,16 +46,10 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       icon: CheckCircle2,
       color: "text-emerald-600 bg-emerald-100"
     },
-    {
-      title: "Credits",
-      value: stats.credits != null ? stats.credits.toString() : "—",
-      icon: Coins,
-      color: "text-violet-600 bg-violet-100"
-    }
   ];
 
   return (
-    <div className="grid gap-6 md:grid-cols-4 mb-8">
+    <div className="grid gap-6 md:grid-cols-3 mb-8">
       {statCards.map((stat) => {
         const IconComponent = stat.icon;
         return (
