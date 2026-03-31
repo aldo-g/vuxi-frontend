@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { validateAndNormalizeUrl } from '@/lib/validations';
 
 const CAPTURE_SERVICE_URL = 'http://localhost:3001';
 
@@ -8,6 +9,11 @@ export async function POST(request: Request) {
 
     if (!url || !jobId) {
       return NextResponse.json({ error: 'url and jobId are required' }, { status: 400 });
+    }
+
+    const validation = validateAndNormalizeUrl(url);
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error || 'Invalid URL' }, { status: 400 });
     }
 
     const response = await fetch(`${CAPTURE_SERVICE_URL}/api/capture/single`, {

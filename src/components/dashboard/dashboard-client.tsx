@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play, Ticket } from 'lucide-react';
+import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play, Ticket, Bug, X } from 'lucide-react';
 import { FormattedDate } from '@/components/common';
 import { QuickActions, DashboardStats } from '@/components/dashboard';
 import { useCurrentUser } from '@/hooks/use-current-user';
@@ -47,31 +47,35 @@ function getProjectStatus(project: Project): {
     };
   }
 
-  const latestRun = project.analysisRuns[0]; // Assuming they're sorted by creation date
-  
+  // If any run is completed, show Available regardless of newer pending/running runs
+  const hasCompleted = project.analysisRuns.some(r => r.status === 'completed');
+  if (hasCompleted) {
+    return {
+      status: 'Available',
+      icon: <div className="h-3 w-3 rounded-full bg-green-500"></div>,
+      iconColor: 'text-green-500'
+    };
+  }
+
+  const latestRun = project.analysisRuns[0]; // Sorted by creation date desc
+
   switch (latestRun.status) {
-    case 'completed':
-      return { 
-        status: 'Available',
-        icon: <div className="h-3 w-3 rounded-full bg-green-500"></div>,
-        iconColor: 'text-green-500'
-      };
     case 'running':
     case 'pending':
-      return { 
+      return {
         status: 'Pending',
         icon: <div className="h-3 w-3 rounded-full bg-orange-500"></div>,
         iconColor: 'text-orange-500'
       };
     case 'failed':
     case 'error':
-      return { 
+      return {
         status: 'Failed',
         icon: <div className="h-3 w-3 rounded-full bg-red-500"></div>,
         iconColor: 'text-red-500'
       };
     default:
-      return { 
+      return {
         status: 'Unknown',
         icon: <div className="h-3 w-3 rounded-full bg-slate-400"></div>,
         iconColor: 'text-slate-400'
@@ -488,6 +492,10 @@ function CreateProjectCard() {
 
 export function DashboardClient({ projects: initialProjects = [] }: DashboardClientProps) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
+  const [bugMessage, setBugMessage] = useState("");
+  const [bugSending, setBugSending] = useState(false);
+  const [bugSent, setBugSent] = useState(false);
   const { user, loading: userLoading } = useCurrentUser();
 
   const handleProjectDeleted = (id: number) => {
@@ -511,7 +519,28 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
     ),
   };
 
+  async function handleSendIssue() {
+    if (!bugMessage.trim() || bugSending) return;
+    setBugSending(true);
+    try {
+      await fetch('/api/report-issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: bugMessage, context: 'Dashboard', userName: user?.Name, userEmail: user?.email }),
+      });
+      setBugSent(true);
+      setTimeout(() => {
+        setBugReportOpen(false);
+        setBugMessage('');
+        setBugSent(false);
+      }, 1500);
+    } finally {
+      setBugSending(false);
+    }
+  }
+
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
@@ -609,5 +638,62 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
         )}
       </div>
     </div>
+
+      {/* Floating Bug Report Button */}
+      <button
+        onClick={() => setBugReportOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
+        aria-label="Report an issue"
+      >
+        <Bug className="w-4 h-4" />
+        Report Issue
+      </button>
+
+      {/* Bug Report Modal */}
+      {bugReportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Bug className="w-5 h-5 text-slate-600" />
+                Report an Issue
+              </h2>
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Describe the issue and we&apos;ll look into it.
+            </p>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              rows={5}
+              placeholder="Describe the issue..."
+              value={bugMessage}
+              onChange={(e) => setBugMessage(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendIssue}
+                disabled={bugSending || bugSent || !bugMessage.trim()}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {bugSent ? 'Sent!' : bugSending ? 'Sending…' : 'Send Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

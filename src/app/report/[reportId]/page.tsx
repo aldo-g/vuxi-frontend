@@ -17,6 +17,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from 'react-markdown';
@@ -25,7 +26,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ExternalLink, ChevronRight, Zap, Lightbulb, ListChecks, MapIcon, Palette, Trophy, Route, FileText, TrendingUp, ShieldCheck, MessageSquareHeart, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, AlertCircle } from "lucide-react";
+import { ExternalLink, ChevronRight, Zap, Lightbulb, ListChecks, MapIcon, Palette, Trophy, Route, FileText, TrendingUp, ShieldCheck, MessageSquareHeart, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Home, AlertCircle, Bug, X } from "lucide-react";
 
 // Migrated Components
 import { ExecutiveSummary } from "@/features/reports";
@@ -91,7 +92,7 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
     if (!response.ok) {
         throw new Error(`Report not found (${response.status})`);
     }
-    const { reportData: data, captureJobId } = await response.json();
+    const { reportData: data, captureJobId, project } = await response.json();
     if (!data.overall_summary) {
         data.overall_summary = {
             executive_summary: "Executive summary not available.",
@@ -106,6 +107,7 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
         data.page_analyses = [];
     }
     data.captureJobId = captureJobId;
+    data.project = project;
     return data;
 };
 
@@ -187,6 +189,11 @@ const MarkdownSectionRenderer: React.FC<{
 export default function ReportOverviewPage({ params }: { params: { reportId: string } }) {
     const { reportId } = params;
     const [activeDetailedTab, setActiveDetailedTab] = useState("key-findings");
+    const [bugReportOpen, setBugReportOpen] = useState(false);
+    const [bugMessage, setBugMessage] = useState("");
+    const [bugSending, setBugSending] = useState(false);
+    const [bugSent, setBugSent] = useState(false);
+    const { user } = useCurrentUser();
 
     const { data: reportData, isLoading, error, isError } = useQuery<ReportData, Error>({
         queryKey: ["reportData", reportId],
@@ -205,10 +212,11 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
     const [parsedDetailedSections, setParsedDetailedSections] = useState<{ [key: string]: { title: string; content: string; subsections: Array<{title:string; content:string}> } }>({});
     const [goalAchievement, setGoalAchievement] = useState<string>("");
     const [performanceSummary, setPerformanceSummary] = useState("No performance summary available.");
+    const [analysisContext, setAnalysisContext] = useState<{ industry: string; primaryGoal: string; targetAudience: string; sitePurpose: string } | null>(null);
 
     useEffect(() => {
         if (reportData) {
-            const { overall_summary, page_analyses = [], metadata, organization, timestamp, analysis_date } = reportData;
+            const { overall_summary, page_analyses = [], metadata, organization, timestamp, analysis_date, project } = reportData;
             setOrganizationName(metadata?.organization_name || organization || `Report ID: ${reportId}`);
             setAnalysisDate(metadata?.generated_at || timestamp || analysis_date || new Date().toISOString());
             setOverallScore(overall_summary.overall_score || 0);
@@ -217,7 +225,16 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
             setPageAnalyses(page_analyses);
             setMainExecutiveSummary(overall_summary.executive_summary || "Not available.");
             setPerformanceSummary(overall_summary.performance_summary || "Not available.");
-            
+
+            // Build analysis context from project fields, falling back to metadata
+            const industry = project?.industry || metadata?.industry || '';
+            const primaryGoal = project?.primaryGoal || metadata?.primary_goal || '';
+            const targetAudience = project?.targetAudience || metadata?.target_audience || '';
+            const sitePurpose = (metadata as any)?.site_purpose || '';
+            if (industry || primaryGoal || targetAudience || sitePurpose) {
+                setAnalysisContext({ industry, primaryGoal, targetAudience, sitePurpose });
+            }
+
             // --- All data parsing logic from original useEffect ---
             const dmc = overall_summary.detailed_markdown_content || "";
             
@@ -365,7 +382,28 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
 
     const { overall_summary } = reportData;
 
+    async function handleSendIssue() {
+        if (!bugMessage.trim() || bugSending) return;
+        setBugSending(true);
+        try {
+            await fetch('/api/report-issue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: bugMessage, context: `Report ${reportId}`, userName: user?.Name, userEmail: user?.email }),
+            });
+            setBugSent(true);
+            setTimeout(() => {
+                setBugReportOpen(false);
+                setBugMessage('');
+                setBugSent(false);
+            }, 1500);
+        } finally {
+            setBugSending(false);
+        }
+    }
+
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-10">
@@ -373,7 +411,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                         <Home className="w-5 h-5" /> All Reports
                     </Link>
                 </div>
-                <header className="text-center mb-16">
+                <header className="text-center mb-10">
                     <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 tracking-tight">Website Analysis: {organizationName}</h1>
                     {analysisDate && (
                       <p className="text-lg sm:text-xl text-slate-600">
@@ -382,23 +420,29 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                     )}
                 </header>
 
-                <section className="grid lg:grid-cols-3 gap-8 mb-16">
-                    <div className="lg:col-span-2">
-                        <ExecutiveSummary summary={{
-                            executive_summary: mainExecutiveSummary,
-                            overall_score: overallScore,
-                            total_pages_analyzed: totalPagesAnalyzed
-                        }} />
+                <section className="grid lg:grid-cols-3 gap-6 mb-10">
+                    <div className="lg:col-span-2 flex flex-col">
+                        <ExecutiveSummary
+                            summary={{
+                                executive_summary: mainExecutiveSummary,
+                                overall_score: overallScore,
+                                total_pages_analyzed: totalPagesAnalyzed
+                            }}
+                            analysisContext={analysisContext}
+                        />
                     </div>
                     <div className="lg:col-span-1">
-                        <Card className="bg-white rounded-2xl border border-slate-200/70 p-6 sm:p-8 shadow-lg h-full">
-                            <CardHeader className="p-0 mb-6">
-                                <CardTitle className="flex items-center gap-3 text-2xl font-semibold text-slate-900">
-                                    <Trophy className="w-6 h-6 text-emerald-600" /> Overall Site Score
+                        <Card className="bg-white rounded-2xl border border-slate-200/70 shadow-lg h-full flex flex-col">
+                            <CardHeader className="p-6 sm:p-8 pb-4 border-b border-slate-100">
+                                <CardTitle className="flex items-center gap-3 text-slate-900">
+                                    <div className="h-8 w-8 bg-emerald-50 rounded-xl flex items-center justify-center">
+                                        <Trophy className="w-4 h-4 text-emerald-600" />
+                                    </div>
+                                    <span className="text-xl font-semibold">Overall Site Score</span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-0 flex flex-col items-center justify-center">
-                                <div className="relative mb-6">
+                            <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center flex-1">
+                                <div className="relative mb-4">
                                     <svg className="score-ring transform -rotate-90" width="120" height="120">
                                         <circle cx="60" cy="60" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
                                         <circle className="score-ring-progress" cx="60" cy="60" r="45" fill="none" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 45}`} strokeDashoffset={`${2 * Math.PI * 45}`} style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1) .5s' }} />
@@ -414,7 +458,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                     <Badge variant="outline" className={`text-sm font-semibold mb-3 px-3 py-1.5 border ${getScoreBoxClasses(overallScore)}`}>
                                         {getOverallScoreStatusText(overallScore)}
                                     </Badge>
-                                    <p className="text-xs text-slate-600 leading-relaxed text-center">{siteScoreExplanation}</p>
+                                    <p className="text-xs text-slate-500 leading-relaxed">{siteScoreExplanation}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -522,5 +566,62 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                 </section>
             </div>
         </div>
+
+      {/* Floating Bug Report Button */}
+      <button
+        onClick={() => setBugReportOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
+        aria-label="Report an issue"
+      >
+        <Bug className="w-4 h-4" />
+        Report Issue
+      </button>
+
+      {/* Bug Report Modal */}
+      {bugReportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Bug className="w-5 h-5 text-slate-600" />
+                Report an Issue
+              </h2>
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Describe the issue with this report and we&apos;ll look into it.
+            </p>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              rows={5}
+              placeholder="Describe the issue..."
+              value={bugMessage}
+              onChange={(e) => setBugMessage(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendIssue}
+                disabled={bugSending || bugSent || !bugMessage.trim()}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {bugSent ? 'Sent!' : bugSending ? 'Sending…' : 'Send Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
     );
 }

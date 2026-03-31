@@ -2,7 +2,7 @@
 
 import React, { useEffect, useCallback, useState } from 'react';
 import { WIZARD_STEPS } from '@/lib/constants';
-import { useWizardState } from '../../hooks/use-wizard-state';
+import { useWizardState, getDeletedPages, saveDeletedPages } from '../../hooks/use-wizard-state';
 import { UrlInputStep, OrganizationStep, PurposeStep, ProcessingStep } from './steps';
 import { ScreenshotReview } from './screenshot-review';
 import { AnalysisComplete } from './analysis-complete';
@@ -20,7 +20,7 @@ interface AnalysisWizardProps {
 }
 
 interface SavedScreenshotData {
-  project: { id: number; baseUrl: string; orgName: string | null; orgPurpose: string | null };
+  project: { id: number; baseUrl: string; orgName: string | null; orgPurpose: string | null; targetAudience: string | null; primaryGoal: string | null; industry: string | null };
   screenshots: Screenshot[];
   captureJobId: string | null;
 }
@@ -66,6 +66,9 @@ function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJo
         <CardTitle className="text-2xl font-semibold">Analyzing Your Website</CardTitle>
         <p className="text-slate-600 mt-2">
           Our AI is reviewing the captured screenshots and generating insights.
+        </p>
+        <p className="text-sm text-slate-500 mt-1">
+          You will be emailed when your analysis is complete.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -144,13 +147,24 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
     previousStep,
     goToStep,
     resetWizard,
-  } = useWizardState();
+  } = useWizardState(projectId);
 
   const [savedData, setSavedData] = useState<SavedScreenshotData | null>(null);
   // null = not decided yet, 'saved' = use existing, 'fresh' = recapture
   const [screenshotChoice, setScreenshotChoice] = useState<'saved' | 'fresh' | null>(null);
-  // show choice card immediately when projectId is present, populate count after fetch
-  const [showChoiceCard, setShowChoiceCard] = useState(!!projectId);
+  // show choice card only when projectId is present AND no draft was restored
+  const [showChoiceCard, setShowChoiceCard] = useState(() => {
+    if (!projectId) return false;
+    // If a draft exists at step 5+ for this same project, skip the choice card
+    try {
+      const raw = typeof window !== 'undefined' ? sessionStorage.getItem('vuxi_wizard_draft') : null;
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.currentStep >= 5 && draft.projectId === projectId) return false;
+      }
+    } catch {}
+    return true;
+  });
 
   // Pre-fill URL if provided
   useEffect(() => {
@@ -179,12 +193,23 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
   const handleUseSaved = useCallback(() => {
     if (!savedData) return;
     setScreenshotChoice('saved');
+    // Use the real captureJobId from the DB so screenshot URLs resolve correctly.
+    // Fall back to a synthetic ID only if no real job ID exists.
+    const captureJobId = savedData.captureJobId ?? `saved-${crypto.randomUUID()}`;
+    // Filter out pages the user has previously deleted for this website
+    const deletedUrls = new Set(getDeletedPages(savedData.project.baseUrl));
+    const screenshots = deletedUrls.size > 0
+      ? savedData.screenshots.filter((s) => !deletedUrls.has(s.url))
+      : savedData.screenshots;
     updateAnalysisData({
       websiteUrl: savedData.project.baseUrl,
       organizationName: savedData.project.orgName ?? '',
       sitePurpose: savedData.project.orgPurpose ?? '',
-      captureJobId: savedData.captureJobId ?? undefined,
-      screenshots: savedData.screenshots,
+      targetAudience: savedData.project.targetAudience ?? '',
+      primaryGoal: savedData.project.primaryGoal ?? '',
+      industry: savedData.project.industry ?? '',
+      captureJobId,
+      screenshots,
     });
     goToStep(5);
   }, [savedData, updateAnalysisData, goToStep]);
@@ -216,6 +241,12 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
     if (captureJob?.status === 'completed') nextStep();
   }, [captureJob?.status, nextStep]);
 
+  const handleManualUpload = useCallback((screenshots: import('@/types').Screenshot[]) => {
+    const captureJobId = `manual-${crypto.randomUUID()}`;
+    updateAnalysisData({ screenshots, captureJobId });
+    goToStep(5);
+  }, [updateAnalysisData, goToStep]);
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -244,7 +275,13 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
         return (
           <PurposeStep
             sitePurpose={analysisData.sitePurpose}
+            targetAudience={analysisData.targetAudience}
+            primaryGoal={analysisData.primaryGoal}
+            industry={analysisData.industry}
             onPurposeChange={(purpose) => updateAnalysisData({ sitePurpose: purpose })}
+            onTargetAudienceChange={(audience) => updateAnalysisData({ targetAudience: audience })}
+            onPrimaryGoalChange={(goal) => updateAnalysisData({ primaryGoal: goal })}
+            onIndustryChange={(industry) => updateAnalysisData({ industry })}
             onNext={nextStep}
             onBack={previousStep}
             captureJob={captureJob}
@@ -257,9 +294,24 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             captureJob={captureJob}
             onNext={handleProcessingNext}
             onBack={previousStep}
+            error={error}
+            onManualUpload={handleManualUpload}
           />
         );
-      case 5:
+      case 5: {
+        const updateAnalysisDataWithDeleteTracking = (updates: Parameters<typeof updateAnalysisData>[0]) => {
+          if (updates.screenshots && analysisData.websiteUrl) {
+            const currentUrls = new Set((analysisData.screenshots ?? []).map((s) => s.url));
+            const nextUrls = new Set(updates.screenshots.map((s) => s.url));
+            const removed = Array.from(currentUrls).filter((u) => !nextUrls.has(u));
+            if (removed.length > 0) {
+              const existing = getDeletedPages(analysisData.websiteUrl);
+              const merged = Array.from(new Set(existing.concat(removed)));
+              saveDeletedPages(analysisData.websiteUrl, merged);
+            }
+          }
+          updateAnalysisData(updates);
+        };
         return (
           <ScreenshotReview
             screenshots={analysisData.screenshots ?? []}
@@ -269,10 +321,11 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             onStartAnalysis={startAnalysis}
             onBack={previousStep}
             isAnalyzing={isAnalyzing}
-            updateAnalysisData={updateAnalysisData}
+            updateAnalysisData={updateAnalysisDataWithDeleteTracking}
             error={error}
           />
         );
+      }
       case 6:
         return (
           <AnalysisProgressStep
@@ -300,14 +353,15 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             <p className="text-slate-600 mt-2">
               {savedData
                 ? <>This project has {savedData.screenshots.length} saved screenshot{savedData.screenshots.length === 1 ? '' : 's'} from a previous capture. Would you like to use them or take fresh ones?</>
-                : <>Would you like to use saved screenshots or take fresh ones?</>
+                : <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin text-slate-400" />Checking for saved screenshots…</span>
               }
             </p>
           </CardHeader>
           <CardContent className="space-y-3 pb-8">
             <button
               onClick={handleUseSaved}
-              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+              disabled={!savedData}
+              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
             >
               <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
                 <Images className="w-5 h-5 text-blue-600" />
@@ -324,7 +378,8 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             </button>
             <button
               onClick={handleRecapture}
-              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all text-left group"
+              disabled={!savedData}
+              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
             >
               <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
                 <RefreshCw className="w-5 h-5 text-slate-600" />

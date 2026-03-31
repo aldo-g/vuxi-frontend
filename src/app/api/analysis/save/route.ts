@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/database';
+import { sendReportReadyEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   const captureJobId = request.nextUrl.searchParams.get('captureJobId');
@@ -49,6 +50,31 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Send completion email
+    try {
+      const run = await prisma.analysisRun.findUnique({
+        where: { id: updated.id },
+        select: {
+          project: {
+            select: {
+              baseUrl: true,
+              user: { select: { email: true } },
+            },
+          },
+        },
+      });
+      if (run?.project?.user?.email) {
+        await sendReportReadyEmail({
+          to: run.project.user.email,
+          reportId: updated.id,
+          websiteUrl: run.project.baseUrl,
+          score: updated.overallScore,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to send report-ready email:', err);
+    }
 
     return NextResponse.json({ success: true, analysisRunId: updated.id });
   } catch (error) {

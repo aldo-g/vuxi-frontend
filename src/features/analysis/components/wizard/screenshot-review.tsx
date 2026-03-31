@@ -30,6 +30,7 @@ export function ScreenshotReview({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingScreenshot, setEditingScreenshot] = useState<Screenshot | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | undefined>(undefined);
+  const [isAddToPageMode, setIsAddToPageMode] = useState(false);
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [draftOrg, setDraftOrg] = useState(organizationName);
   const [draftPurpose, setDraftPurpose] = useState(sitePurpose);
@@ -98,9 +99,9 @@ export function ScreenshotReview({
   };
 
   const handleAddToPage = (url: string) => {
-    // Pre-seed edit modal with the page's URL so user adds a state to that page
     setEditingScreenshot({ url, success: true, data: { url } });
     setEditingIndex(undefined);
+    setIsAddToPageMode(true);
     setIsEditModalOpen(true);
   };
 
@@ -142,6 +143,7 @@ export function ScreenshotReview({
     setIsEditModalOpen(false);
     setEditingScreenshot(null);
     setEditingIndex(undefined);
+    setIsAddToPageMode(false);
   };
 
   return (
@@ -274,6 +276,7 @@ export function ScreenshotReview({
         editingScreenshot={editingScreenshot}
         editingIndex={editingIndex}
         captureJobId={captureJobId}
+        addToPageMode={isAddToPageMode}
       />
     </Card>
   );

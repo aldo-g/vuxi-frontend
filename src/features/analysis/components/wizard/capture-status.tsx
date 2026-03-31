@@ -5,6 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import type { CaptureJob } from '../../types';
 
+const CAPTURE_ERROR_MESSAGES: Record<string, string> = {
+  bot_protection: 'This website is blocking automated access (bot protection or CAPTCHA). Try a different URL.',
+  dns_error: 'Website not found. Check the URL is correct and the site is publicly accessible.',
+  connection_error: 'Could not connect to the website. It may be down or temporarily unavailable.',
+  timeout: 'The website took too long to respond. Please try again or try a different URL.',
+  no_urls: 'No pages could be discovered. The site may require login or block crawlers.',
+  unknown: 'Capture failed. Manual upload and tagging may be required.',
+};
+
 interface CaptureStatusProps {
   captureJob: CaptureJob | null;
   captureStarted: boolean;
@@ -28,11 +37,12 @@ export const CaptureStatus = memo(function CaptureStatus({
   }
 
   if (captureJob.status === 'failed') {
+    const message = CAPTURE_ERROR_MESSAGES[captureJob.errorType ?? 'unknown'] ?? (captureJob.error || 'Capture failed. Manual upload and tagging may be required.');
     return (
       <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-        <div className="flex items-center gap-2 text-red-700 text-sm">
-          <AlertCircle className="w-4 h-4" />
-          <span>Analysis failed: {captureJob.error || 'Unknown error'}</span>
+        <div className="flex items-start gap-2 text-red-700 text-sm">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{message}</span>
         </div>
       </div>
     );

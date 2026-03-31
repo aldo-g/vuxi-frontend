@@ -35,6 +35,9 @@ export async function GET(
         baseUrl: true,
         orgName: true,
         orgPurpose: true,
+        targetAudience: true,
+        primaryGoal: true,
+        industry: true,
       },
     });
 

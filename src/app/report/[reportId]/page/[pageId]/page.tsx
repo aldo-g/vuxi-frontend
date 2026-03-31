@@ -17,6 +17,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from 'react-markdown';
@@ -24,7 +25,7 @@ import remarkGfm from 'remark-gfm';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, ImageOff, MessageSquareHeart, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, ImageOff, MessageSquareHeart, X, ChevronLeft, ChevronRight, Bug } from "lucide-react";
 import { FormattedDate } from "@/components/common/formatted-date";
 
 // --- Interfaces and Helper Functions ---
@@ -303,6 +304,11 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
   const [activeTab, setActiveTab] = useState("tab-detailed");
   const [activeNestedTab, setActiveNestedTab] = useState("role-analysis");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
+  const [bugMessage, setBugMessage] = useState("");
+  const [bugSending, setBugSending] = useState(false);
+  const [bugSent, setBugSent] = useState(false);
+  const { user } = useCurrentUser();
 
   const { data: reportData, isLoading: isLoadingReport, error: reportError, isError: isReportError } = useQuery<ReportData, Error>({
     queryKey: ["reportData", reportId],
@@ -347,20 +353,45 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     };
 
     // Prefer URL-keyed lookup (covers custom/uploaded screenshots too)
-    if (screenshotsByUrl && screenshotsByUrl[pageData.url]) {
-      return screenshotsByUrl[pageData.url].map((src, i) => ({
-        filename: src.split('/').pop() || `screenshot-${i}`,
-        src,
-      }));
+    // Normalize the URL to handle trailing slash mismatches
+    const normalizeUrlKey = (u: string) => {
+      try {
+        const parsed = new URL(u);
+        if (parsed.pathname === '/') parsed.pathname = '';
+        return parsed.href.replace(/\/$/, '');
+      } catch {
+        return u.replace(/\/$/, '');
+      }
+    };
+    const normalizedPageUrl = normalizeUrlKey(pageData.url);
+    if (screenshotsByUrl) {
+      const shots = screenshotsByUrl[normalizedPageUrl] ?? screenshotsByUrl[pageData.url];
+      if (shots) {
+        return shots.map((src, i) => ({
+          filename: src.split('/').pop() || `screenshot-${i}`,
+          src,
+        }));
+      }
     }
 
     if (!screenshotsMap) return getPrimaryFallback();
 
+    // Fallback: match by full path segment to avoid cross-page hostname collisions
+    let urlPathname = '';
     let hostname = '';
-    try { hostname = new URL(pageData.url).hostname; } catch { hostname = pageData.url; }
+    try {
+      const parsed = new URL(pageData.url);
+      hostname = parsed.hostname;
+      urlPathname = parsed.pathname.replace(/^\//, '').split('/')[0] || 'index';
+    } catch { hostname = pageData.url; urlPathname = 'index'; }
 
+    const isRootPage = urlPathname === 'index' || urlPathname === '';
     const matching = Object.entries(screenshotsMap)
-      .filter(([filename]) => filename.includes(hostname))
+      .filter(([filename]) => {
+        if (!filename.includes(hostname)) return false;
+        if (isRootPage) return filename.includes('index');
+        return filename.includes(urlPathname);
+      })
       .map(([filename, src]) => ({ filename, src }))
       .sort((a, b) => a.filename.localeCompare(b.filename));
 
@@ -456,7 +487,33 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
   }
   
 
+  async function handleSendIssue() {
+    if (!bugMessage.trim() || bugSending) return;
+    setBugSending(true);
+    try {
+      await fetch('/api/report-issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: bugMessage,
+          context: `Report ${reportId} – Page: ${pageData?.title || pageId} (${pageData?.url || ''})`,
+          userName: user?.Name,
+          userEmail: user?.email,
+        }),
+      });
+      setBugSent(true);
+      setTimeout(() => {
+        setBugReportOpen(false);
+        setBugMessage('');
+        setBugSent(false);
+      }, 1500);
+    } finally {
+      setBugSending(false);
+    }
+  }
+
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-10">
@@ -551,7 +608,6 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   { id: 'tab-detailed', label: 'Detailed Analysis' },
                   { id: 'tab-issues', label: 'Key Issues', count: pageData.key_issues?.length || 0 },
                   { id: 'tab-recommendations', label: 'Recommendations', count: pageData.recommendations?.length || 0 },
-                  { id: 'tab-raw', label: 'Raw LLM Output' },
                   { id: 'tab-screenshot', label: 'Screenshot', count: pageScreenshots.length > 1 ? pageScreenshots.length : 0 }
                 ].map((tab) => (
                   <TabsTrigger
@@ -751,16 +807,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               </div>
             </TabsContent>
 
-            <TabsContent value="tab-raw" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/80 p-6 sm:p-8 shadow-inner">
-                <h3 className="text-xl font-semibold text-slate-800 mb-4">Raw LLM Output</h3>
-                <pre className="text-xs sm:text-sm text-slate-700 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto bg-white p-4 rounded-lg border border-slate-200">
-                  {pageData.raw_analysis || pageData.detailed_analysis || 'No raw analysis data available for this page.'}
-                </pre>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="tab-screenshot" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+<TabsContent value="tab-screenshot" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
               {pageScreenshots.length > 0 ? (
                 <>
                   <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Page Screenshots</h3>
@@ -776,12 +823,12 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                         <button
                           key={shot.filename}
                           onClick={() => setLightboxIndex(i)}
-                          className="group relative rounded-xl overflow-hidden border-2 border-slate-200 shadow hover:shadow-lg hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="group relative rounded-xl overflow-hidden border-2 border-slate-200 shadow hover:shadow-lg hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
                         >
                           <img
                             src={shot.src}
                             alt={label}
-                            className="w-full h-48 object-cover object-top group-hover:scale-[1.02] transition-transform duration-200"
+                            className="w-full h-48 object-contain object-top group-hover:scale-[1.02] transition-transform duration-200"
                           />
                           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
                             <p className="text-white text-xs font-medium truncate">{label}</p>
@@ -846,5 +893,62 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
         </div>
       </div>
     </div>
+
+      {/* Floating Bug Report Button */}
+      <button
+        onClick={() => setBugReportOpen(true)}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
+        aria-label="Report an issue"
+      >
+        <Bug className="w-4 h-4" />
+        Report Issue
+      </button>
+
+      {/* Bug Report Modal */}
+      {bugReportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Bug className="w-5 h-5 text-slate-600" />
+                Report an Issue
+              </h2>
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Describe the issue with this report and we&apos;ll look into it.
+            </p>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              rows={5}
+              placeholder="Describe the issue..."
+              value={bugMessage}
+              onChange={(e) => setBugMessage(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setBugReportOpen(false); setBugMessage(""); }}
+                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendIssue}
+                disabled={bugSending || bugSent || !bugMessage.trim()}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {bugSent ? 'Sent!' : bugSending ? 'Sending…' : 'Send Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -33,6 +33,9 @@ export interface AnalysisData {
   websiteUrl: string;
   organizationName: string;
   sitePurpose: string;
+  targetAudience: string;
+  primaryGoal: string;
+  industry: string;
   captureJobId?: string;
   screenshots?: Screenshot[];
   userId?: number; // Added userId field
@@ -82,6 +85,7 @@ export interface CaptureJob {
     };
   };
   error?: string;
+  errorType?: 'bot_protection' | 'dns_error' | 'connection_error' | 'timeout' | 'no_urls' | 'unknown';
 }
 
 export interface AnalysisJob {
@@ -177,6 +181,9 @@ export interface ReportMetadata {
   website_url: string;
   organization_name: string;
   site_purpose: string;
+  target_audience?: string;
+  primary_goal?: string;
+  industry?: string;
   total_pages_analyzed: number;
   analysis_version: string;
 }
@@ -203,6 +210,9 @@ export interface DbProject {
   baseUrl: string;
   orgName: string | null;
   orgPurpose: string | null;
+  targetAudience: string | null;
+  primaryGoal: string | null;
+  industry: string | null;
   createdAt: Date;
 }
 

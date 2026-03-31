@@ -24,8 +24,8 @@ import {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  CAPTURE: 'http://localhost:3001/api/capture',
-  CAPTURE_SAVE: '/api/capture/save', // New endpoint for saving capture data
+  CAPTURE: '/api/capture',
+  CAPTURE_SAVE: '/api/capture/save',
   ANALYSIS: 'http://localhost:3002/api/analysis',
   AUTH: {
     LOGIN: '/api/auth/login',

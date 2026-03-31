@@ -58,7 +58,7 @@ export function FormattedDate({ dateString, format = 'short' }: FormattedDatePro
           };
       }
       
-      setFormattedDate(date.toLocaleDateString(undefined, formatOptions));
+      setFormattedDate(date.toLocaleDateString('en-US', formatOptions));
     } catch (error) {
       console.error('Error formatting date:', error);
       setFormattedDate('');

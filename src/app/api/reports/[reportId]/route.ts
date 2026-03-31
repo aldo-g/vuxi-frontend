@@ -96,14 +96,25 @@ export async function GET(
     // Build filename -> storageUrl and pageUrl -> storageUrl[] maps for the frontend
     const screenshots: Record<string, string> = {};
     const screenshotsByUrl: Record<string, string[]> = {};
+    const normalizeUrl = (u: string) => {
+      try {
+        const parsed = new URL(u);
+        parsed.hostname = parsed.hostname.replace(/^www\./, '');
+        if (parsed.pathname === '/') parsed.pathname = '';
+        return parsed.href.replace(/\/$/, '');
+      } catch {
+        return u.replace(/\/$/, '');
+      }
+    };
     for (const page of run.analyzedPages) {
+      const pageUrl = normalizeUrl(page.url);
       for (const shot of page.screenshots) {
         if (shot.filename && shot.storageUrl) {
           screenshots[shot.filename] = shot.storageUrl;
         }
         if (shot.storageUrl) {
-          if (!screenshotsByUrl[page.url]) screenshotsByUrl[page.url] = [];
-          screenshotsByUrl[page.url].push(shot.storageUrl);
+          if (!screenshotsByUrl[pageUrl]) screenshotsByUrl[pageUrl] = [];
+          screenshotsByUrl[pageUrl].push(shot.storageUrl);
         }
       }
     }
@@ -117,6 +128,9 @@ export async function GET(
         id: run.project.id,
         name: run.project.name,
         baseUrl: run.project.baseUrl,
+        targetAudience: run.project.targetAudience,
+        primaryGoal: run.project.primaryGoal,
+        industry: run.project.industry,
       },
     });
   } catch (error) {

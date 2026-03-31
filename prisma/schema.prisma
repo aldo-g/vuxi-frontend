@@ -30,15 +30,18 @@ model VoucherCode {
 }
 
 model Project {
-  id           Int           @id @default(autoincrement())
-  userId       Int
-  name         String
-  baseUrl      String
-  orgName      String?
-  orgPurpose   String?
-  createdAt    DateTime      @default(now())
-  user         User          @relation(fields: [userId], references: [id])
-  analysisRuns AnalysisRun[]
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  name            String
+  baseUrl         String
+  orgName         String?
+  orgPurpose      String?
+  targetAudience  String?
+  primaryGoal     String?
+  industry        String?
+  createdAt       DateTime      @default(now())
+  user            User          @relation(fields: [userId], references: [id])
+  analysisRuns    AnalysisRun[]
 
   @@unique([userId, baseUrl])
 }
@@ -64,6 +67,31 @@ model AnalyzedPage {
   pageAim     String?
   analysisRun AnalysisRun @relation(fields: [runId], references: [id])
   screenshots Screenshot[] // This now links to the new Screenshot table
+}
+
+model CaptureJob {
+  id           String   @id  // UUID from the capture service
+  baseUrl      String
+  status       String
+  progress     Json?
+  urlDiscovery Json?
+  results      Json?
+  error        String?
+  errorType    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AnalysisJob {
+  id           String   @id  // UUID from the analysis service
+  captureJobId String
+  status       String
+  progress     Json?
+  analysisData Json?
+  results      Json?
+  error        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // UPDATED: Enhanced Screenshot model to capture payload data

@@ -73,6 +73,9 @@ export async function POST(request: Request) {
         data: {
           orgName: analysisData.organizationName || undefined,
           orgPurpose: analysisData.sitePurpose || undefined,
+          targetAudience: analysisData.targetAudience || undefined,
+          primaryGoal: analysisData.primaryGoal || undefined,
+          industry: analysisData.industry || undefined,
         },
       }).catch((err: unknown) => {
         console.warn("Failed to update project org details:", err);

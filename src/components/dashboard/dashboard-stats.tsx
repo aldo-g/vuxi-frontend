@@ -23,7 +23,7 @@ function formatLastAnalysis(value?: string): string {
   const isYesterday = date.toDateString() === yesterday.toDateString();
   if (isToday) return "Today";
   if (isYesterday) return "Yesterday";
-  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  return date.toLocaleDateString('en-US', { month: "short", day: "numeric" });
 }
 
 export function DashboardStats({ stats }: DashboardStatsProps) {

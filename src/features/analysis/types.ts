@@ -50,7 +50,13 @@ export interface OrganizationStepProps extends StepProps {
 
 export interface PurposeStepProps extends StepProps {
   sitePurpose: string;
+  targetAudience: string;
+  primaryGoal: string;
+  industry: string;
   onPurposeChange: (purpose: string) => void;
+  onTargetAudienceChange: (audience: string) => void;
+  onPrimaryGoalChange: (goal: string) => void;
+  onIndustryChange: (industry: string) => void;
   captureJob: CaptureJob | null;
   captureStarted: boolean;
 }

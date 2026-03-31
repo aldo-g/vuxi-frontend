@@ -37,8 +37,18 @@ export async function POST(request: NextRequest) {
 
     // Build set of URLs that already exist in the DB for this run
     const existingUrls = new Set(run.analyzedPages.map((p) => p.url));
+    // URLs present in DB but not in the new screenshots list should be removed
+    const incomingUrls = new Set(byUrl.keys());
 
     await prisma.$transaction(async (tx) => {
+      // Delete pages (and their screenshots) that were removed by the user
+      for (const page of run.analyzedPages) {
+        if (!incomingUrls.has(page.url)) {
+          await tx.screenshot.deleteMany({ where: { analyzedPageId: page.id } });
+          await tx.analyzedPage.delete({ where: { id: page.id } });
+        }
+      }
+
       for (const [url, pageScreenshots] of byUrl) {
         if (existingUrls.has(url)) {
           // URL already tracked — add only screenshots that aren't already there

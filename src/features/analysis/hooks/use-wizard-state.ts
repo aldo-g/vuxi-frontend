@@ -20,18 +20,129 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { WIZARD_STEPS, API_ENDPOINTS, POLLING_INTERVALS } from '@/lib/constants';
 import { validateAndNormalizeUrl } from '@/lib/validations';
 import { useCurrentUser } from '@/hooks/use-current-user';
-import type { 
-  WizardState, 
-  AnalysisData, 
-  CaptureJob, 
-  AnalysisJob, 
-  SaveCaptureRequest 
+import type {
+  WizardState,
+  AnalysisData,
+  CaptureJob,
+  AnalysisJob,
+  SaveCaptureRequest
 } from '../types';
+
+const DRAFT_STORAGE_KEY = 'vuxi_wizard_draft';
+
+function getCaptureErrorMessage(errorType?: string, rawError?: string): string {
+  switch (errorType) {
+    case 'bot_protection':
+      return 'This website appears to be blocking automated access. Sites with Cloudflare, CAPTCHA, or strict bot protection cannot be captured. Try a different URL or contact support.';
+    case 'dns_error':
+      return 'The website could not be found. Please check the URL is correct and the site is publicly accessible.';
+    case 'connection_error':
+      return 'Could not connect to the website. The site may be down or temporarily unavailable. Please try again later.';
+    case 'timeout':
+      return 'The website took too long to respond. It may be slow or unresponsive. Please try again or try a different URL.';
+    case 'no_urls':
+      return 'No pages could be discovered on this website. It may require JavaScript to load or may be blocking crawlers.';
+    default:
+      return rawError || 'Capture failed. Please try again.';
+  }
+}
+const DELETED_PAGES_KEY = 'vuxi_deleted_pages'; // localStorage: Record<websiteUrl, string[]>
+
+interface WizardDraft {
+  currentStep: number;
+  analysisData: AnalysisData;
+  captureJob: CaptureJob | null;
+  captureStarted: boolean;
+  projectId?: number;
+}
+
+export function getDeletedPages(websiteUrl: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_PAGES_KEY);
+    if (!raw) return [];
+    const map: Record<string, string[]> = JSON.parse(raw);
+    return map[websiteUrl] ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDeletedPages(websiteUrl: string, deletedUrls: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(DELETED_PAGES_KEY);
+    const map: Record<string, string[]> = raw ? JSON.parse(raw) : {};
+    if (deletedUrls.length === 0) {
+      delete map[websiteUrl];
+    } else {
+      map[websiteUrl] = deletedUrls;
+    }
+    localStorage.setItem(DELETED_PAGES_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+function loadDraft(projectId?: number): Partial<WizardState> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const draft: WizardDraft = JSON.parse(raw);
+    // Only restore if we were at the screenshot review step or later (step 5)
+    if (draft.currentStep < 5) {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+    // Only restore if the draft belongs to the same project context.
+    // A fresh "Create New Analysis" (no projectId) must never restore any draft.
+    // A project-specific run must only restore a draft saved for the same project.
+    if (projectId === undefined || draft.projectId !== projectId) {
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+    return {
+      currentStep: draft.currentStep,
+      analysisData: draft.analysisData,
+      captureJob: draft.captureJob,
+      captureStarted: draft.captureStarted,
+    };
+  } catch {
+    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    return null;
+  }
+}
+
+function saveDraft(state: WizardState, projectId?: number) {
+  if (typeof window === 'undefined') return;
+  if (state.currentStep < 5) return;
+  try {
+    const draft: WizardDraft = {
+      currentStep: state.currentStep,
+      analysisData: state.analysisData,
+      captureJob: state.captureJob,
+      captureStarted: state.captureStarted,
+      projectId,
+    };
+    sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // sessionStorage full or unavailable — ignore
+  }
+}
+
+function clearDraft() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+}
 
 const initialAnalysisData: AnalysisData = {
   websiteUrl: '',
   organizationName: '',
-  sitePurpose: ''
+  sitePurpose: '',
+  targetAudience: '',
+  primaryGoal: '',
+  industry: '',
 };
 
 const initialState: WizardState = {
@@ -45,8 +156,14 @@ const initialState: WizardState = {
   isAnalyzing: false
 };
 
-export function useWizardState() {
-  const [state, setState] = useState<WizardState>(initialState);
+export function useWizardState(projectId?: number) {
+  const [state, setState] = useState<WizardState>(() => {
+    const draft = loadDraft(projectId);
+    if (draft) {
+      return { ...initialState, ...draft };
+    }
+    return initialState;
+  });
   const { user } = useCurrentUser();
   
   // Refs for polling intervals
@@ -150,7 +267,7 @@ export function useWizardState() {
         setCaptureJob(jobData);
         
         if (jobData.status === 'completed') {
-          const rawScreenshots: Array<{ url: string; filename?: string; path?: string; [key: string]: unknown }> = jobData.results?.screenshots || [];
+          const rawScreenshots: Array<{ url: string; filename?: string; path?: string; storageUrl?: string; [key: string]: unknown }> = jobData.results?.screenshots || [];
           const screenshots = rawScreenshots.map(s => ({
             url: s.url as string,
             success: true,
@@ -158,6 +275,7 @@ export function useWizardState() {
               url: s.url as string,
               filename: s.filename as string | undefined,
               path: s.path as string | undefined,
+              storageUrl: s.storageUrl as string | undefined,
               timestamp: s.timestamp as string | undefined,
             }
           }));
@@ -182,8 +300,8 @@ export function useWizardState() {
             capturePollingRef.current = null;
           }
         } else if (jobData.status === 'failed') {
-          setError(jobData.error || 'Capture failed');
-          
+          setError(getCaptureErrorMessage(jobData.errorType, jobData.error));
+
           // Stop polling
           if (capturePollingRef.current) {
             clearInterval(capturePollingRef.current);
@@ -240,6 +358,7 @@ export function useWizardState() {
                 });
                 if (saveRes.ok) {
                   const { analysisRunId } = await saveRes.json();
+                  clearDraft();
                   window.location.href = `/report/${analysisRunId}`;
                   return;
                 }
@@ -251,8 +370,10 @@ export function useWizardState() {
             const { screenshots: _screenshots, ...reportWithoutScreenshots } = jobData.results.reportData;
             sessionStorage.setItem('liveReportData', JSON.stringify(reportWithoutScreenshots));
             if (captureJobId) sessionStorage.setItem('liveCaptureJobId', captureJobId);
+            clearDraft();
             window.location.href = '/report/live';
           } else {
+            clearDraft();
             setCurrentStep(7);
           }
           
@@ -274,7 +395,7 @@ export function useWizardState() {
     } finally {
       isAnalysisPollingRef.current = false;
     }
-  }, [state.analysisJob?.id, setAnalysisJob, setAnalyzing, setCurrentStep, setError]);
+  }, [state.analysisJob?.id, state.analysisData.captureJobId, setAnalysisJob, setAnalyzing, setCurrentStep, setError]);
 
   // Start capture
   const startCapture = useCallback(async (url: string): Promise<boolean> => {
@@ -352,16 +473,24 @@ export function useWizardState() {
 
     setAnalyzing(true);
     setError(null);
-    setCurrentStep(6);
 
     try {
-      // Persist any screenshots added/modified at the review step before analysis starts
-      if (state.analysisData.captureJobId && state.analysisData.screenshots?.length) {
+      const captureJobId = state.analysisData.captureJobId!;
+
+      // When reusing saved screenshots, no capture job was run so no AnalysisRun
+      // exists yet — create one now before syncing or saving the report.
+      if (captureJobId.startsWith('saved-') && user?.id) {
+        await saveCaptureData(
+          { ...state.analysisData, userId: user.id },
+          captureJobId
+        );
+      } else if (state.analysisData.screenshots?.length) {
+        // Persist any screenshots added/modified at the review step before analysis starts
         fetch('/api/capture/sync-screenshots', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            captureJobId: state.analysisData.captureJobId,
+            captureJobId,
             screenshots: state.analysisData.screenshots,
           }),
         }).catch((err) => console.warn('Screenshot sync failed (non-blocking):', err));
@@ -375,7 +504,7 @@ export function useWizardState() {
             ...state.analysisData,
             userId: user?.id
           },
-          captureJobId: state.analysisData.captureJobId
+          captureJobId
         })
       });
 
@@ -405,13 +534,14 @@ export function useWizardState() {
         progress: { stage: 'starting', percentage: 0, message: 'Starting analysis...' },
         results: result.reportData ? { reportData: result.reportData } : undefined
       });
+      setCurrentStep(6);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start analysis';
       setError(errorMessage);
       setAnalyzing(false);
     }
-  }, [state.analysisData, user?.id, setAnalyzing, setError, setCurrentStep, setAnalysisJob]);
+  }, [state.analysisData, user?.id, setAnalyzing, setError, setCurrentStep, setAnalysisJob, saveCaptureData]);
   
   // Start polling when needed
   const startCapturePolling = useCallback(() => {
@@ -439,10 +569,18 @@ export function useWizardState() {
     // Clear intervals
     stopCapturePolling();
     stopAnalysisPolling();
-    
+
+    // Clear draft
+    clearDraft();
+
     // Reset state
     setState(initialState);
   }, [stopCapturePolling, stopAnalysisPolling]);
+
+  // Persist draft to sessionStorage whenever we're at step 5+
+  useEffect(() => {
+    saveDraft(state, projectId);
+  }, [state, projectId]);
 
   // Cleanup intervals on unmount
   useEffect(() => {
@@ -458,7 +596,13 @@ export function useWizardState() {
   }, [state.currentStep, setCurrentStep]);
 
   const previousStep = useCallback(() => {
-    setCurrentStep(Math.max(state.currentStep - 1, 1));
+    const nextStep = Math.max(state.currentStep - 1, 1);
+    // Clear any capture errors when going back to the URL input step
+    if (nextStep === 1) {
+      setState(prev => ({ ...prev, currentStep: nextStep, error: null }));
+    } else {
+      setCurrentStep(nextStep);
+    }
   }, [state.currentStep, setCurrentStep]);
 
   const goToStep = useCallback((step: number) => {
