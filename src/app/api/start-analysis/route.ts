@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import * as jose from "jose";
 import prisma from "@/lib/database";
 
-const ANALYSIS_SERVICE_URL = "http://localhost:3002/api/analysis";
+const ANALYSIS_SERVICE_URL = `${process.env.PIPELINE_URL || "http://localhost:3001"}/api/analysis`;
 const CREDITS_PER_ANALYSIS = 1;
 
 export async function POST(request: Request) {

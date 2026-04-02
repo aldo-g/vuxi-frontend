@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { validateAndNormalizeUrl } from '@/lib/validations';
 
-const CAPTURE_SERVICE_URL = 'http://localhost:3001';
+const CAPTURE_SERVICE_URL = process.env.PIPELINE_URL || 'http://localhost:3001';
 
 export async function POST(request: Request) {
   try {

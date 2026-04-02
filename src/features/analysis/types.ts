@@ -49,11 +49,9 @@ export interface OrganizationStepProps extends StepProps {
 }
 
 export interface PurposeStepProps extends StepProps {
-  sitePurpose: string;
   targetAudience: string;
   primaryGoal: string;
   industry: string;
-  onPurposeChange: (purpose: string) => void;
   onTargetAudienceChange: (audience: string) => void;
   onPrimaryGoalChange: (goal: string) => void;
   onIndustryChange: (industry: string) => void;
@@ -65,7 +63,7 @@ export interface ScreenshotReviewProps {
   screenshots: Screenshot[];
   captureJobId: string;
   organizationName: string;
-  sitePurpose: string;
+  primaryGoal: string;
   onStartAnalysis: () => void;
   onBack: () => void;
   isAnalyzing: boolean;

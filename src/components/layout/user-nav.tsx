@@ -129,7 +129,7 @@ export function UserNav() {
         className="h-8 text-xs gap-1.5 text-slate-600"
       >
         <Ticket className="h-3.5 w-3.5" />
-        {user != null ? `${user.credits} credit${user.credits !== 1 ? 's' : ''}` : 'Credits'}
+        {`${user?.credits ?? 0} credit${(user?.credits ?? 0) !== 1 ? 's' : ''}`}
       </Button>
 
       <DropdownMenu>
@@ -176,6 +176,13 @@ export function UserNav() {
           <div className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
               Enter your voucher code below. Each code adds credits to your account — one credit per analysis.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have a voucher code? Email{' '}
+              <a href="mailto:alstairegrant@pm.me" className="text-primary underline underline-offset-4">
+                alstairegrant@pm.me
+              </a>{' '}
+              to request one.
             </p>
             <div className="space-y-1">
               <Label htmlFor="voucher-code">Voucher Code</Label>

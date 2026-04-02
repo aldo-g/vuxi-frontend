@@ -30,7 +30,7 @@ export const CaptureStatus = memo(function CaptureStatus({
       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
         <div className="flex items-center gap-2 text-green-700 text-sm">
           <CheckCircle2 className="w-4 h-4" />
-          <span>Website analysis completed!</span>
+          <span>Website capture complete!</span>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 
-const CAPTURE_SERVICE_URL = 'http://localhost:3001';
+const CAPTURE_SERVICE_URL = process.env.PIPELINE_URL || 'http://localhost:3001';
 
 async function getAuthenticatedUserId(): Promise<number | null> {
   const token = cookies().get('token')?.value;

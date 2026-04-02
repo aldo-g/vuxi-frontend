@@ -17,7 +17,7 @@ export function ScreenshotReview({
   screenshots,
   captureJobId,
   organizationName,
-  sitePurpose,
+  primaryGoal,
   onStartAnalysis,
   onBack,
   isAnalyzing,
@@ -31,19 +31,19 @@ export function ScreenshotReview({
   const [editingScreenshot, setEditingScreenshot] = useState<Screenshot | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | undefined>(undefined);
   const [isAddToPageMode, setIsAddToPageMode] = useState(false);
-  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [isEditingConfig, setIsEditingConfig] = useState(!organizationName || !primaryGoal);
   const [draftOrg, setDraftOrg] = useState(organizationName);
-  const [draftPurpose, setDraftPurpose] = useState(sitePurpose);
+  const [draftGoal, setDraftGoal] = useState(primaryGoal);
   const { toast } = useToast();
 
   const handleSaveConfig = () => {
-    updateAnalysisData({ organizationName: draftOrg, sitePurpose: draftPurpose });
+    updateAnalysisData({ organizationName: draftOrg, primaryGoal: draftGoal });
     setIsEditingConfig(false);
   };
 
   const handleCancelConfig = () => {
     setDraftOrg(organizationName);
-    setDraftPurpose(sitePurpose);
+    setDraftGoal(primaryGoal);
     setIsEditingConfig(false);
   };
 
@@ -213,21 +213,29 @@ export function ScreenshotReview({
                 )}
               </div>
               <div className="flex items-start gap-2">
-                <strong className="shrink-0 mt-1.5">Purpose:</strong>
+                <strong className="shrink-0 mt-1.5">Primary goal:</strong>
                 {isEditingConfig ? (
                   <Textarea
-                    value={draftPurpose}
-                    onChange={e => setDraftPurpose(e.target.value)}
+                    value={draftGoal}
+                    onChange={e => setDraftGoal(e.target.value)}
                     className="text-sm min-h-[60px]"
                   />
                 ) : (
-                  <span className="mt-1">{sitePurpose}</span>
+                  <span className="mt-1">{primaryGoal}</span>
                 )}
               </div>
               <p><strong>Pages Captured:</strong> {new Set(screenshots.map(s => s.url)).size}</p>
             </div>
           </div>
         </div>
+
+        {/* Missing config warning */}
+        {(!organizationName || !primaryGoal) && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-amber-700">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">Please fill in the Organization name and Primary goal above before starting analysis.</span>
+          </div>
+        )}
 
         {/* Error display */}
         {error && (
@@ -247,9 +255,10 @@ export function ScreenshotReview({
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <Button 
+          <Button
             onClick={onStartAnalysis}
-            disabled={screenshots.length === 0 || isAnalyzing}
+            disabled={screenshots.length === 0 || isAnalyzing || !organizationName || !primaryGoal}
+            title={!organizationName || !primaryGoal ? 'Fill in Organization and Primary goal before starting analysis' : undefined}
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
           >
             <Zap className="w-4 h-4 mr-2" />

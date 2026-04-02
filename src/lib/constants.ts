@@ -26,7 +26,7 @@ import {
 export const API_ENDPOINTS = {
   CAPTURE: '/api/capture',
   CAPTURE_SAVE: '/api/capture/save',
-  ANALYSIS: 'http://localhost:3002/api/analysis',
+  ANALYSIS: `${process.env.NEXT_PUBLIC_PIPELINE_URL || 'http://localhost:3001'}/api/analysis`,
   AUTH: {
     LOGIN: '/api/auth/login',
     REGISTER: '/api/auth/register',

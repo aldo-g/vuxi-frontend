@@ -102,7 +102,8 @@ export default function LiveReportPage() {
     // Actual files are at job dir /desktop/filename.png on capture service
     const filename = screenshotPath.split('/').pop();
     if (!filename) return "";
-    return `http://localhost:3001/data/job_${captureJobId}/desktop/${filename}`;
+    const pipelineUrl = process.env.NEXT_PUBLIC_PIPELINE_URL || 'http://localhost:3001';
+    return `${pipelineUrl}/data/job_${captureJobId}/desktop/${filename}`;
   };
 
   if (loading) {

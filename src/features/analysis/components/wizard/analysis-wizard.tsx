@@ -274,11 +274,9 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
       case 3:
         return (
           <PurposeStep
-            sitePurpose={analysisData.sitePurpose}
             targetAudience={analysisData.targetAudience}
             primaryGoal={analysisData.primaryGoal}
             industry={analysisData.industry}
-            onPurposeChange={(purpose) => updateAnalysisData({ sitePurpose: purpose })}
             onTargetAudienceChange={(audience) => updateAnalysisData({ targetAudience: audience })}
             onPrimaryGoalChange={(goal) => updateAnalysisData({ primaryGoal: goal })}
             onIndustryChange={(industry) => updateAnalysisData({ industry })}
@@ -317,7 +315,7 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             screenshots={analysisData.screenshots ?? []}
             captureJobId={analysisData.captureJobId ?? ''}
             organizationName={analysisData.organizationName}
-            sitePurpose={analysisData.sitePurpose}
+            primaryGoal={analysisData.primaryGoal}
             onStartAnalysis={startAnalysis}
             onBack={previousStep}
             isAnalyzing={isAnalyzing}

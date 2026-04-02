@@ -1,10 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Target, ArrowRight, ArrowLeft } from 'lucide-react';
 import type { PurposeStepProps } from '../../../types';
@@ -27,12 +28,12 @@ const INDUSTRIES = [
   'Other',
 ];
 
+const OTHER_SENTINEL = '__other__';
+
 export function PurposeStep({
-  sitePurpose,
   targetAudience,
   primaryGoal,
   industry,
-  onPurposeChange,
   onTargetAudienceChange,
   onPrimaryGoalChange,
   onIndustryChange,
@@ -41,6 +42,22 @@ export function PurposeStep({
   captureJob,
   captureStarted,
 }: PurposeStepProps) {
+  const isOther = industry === OTHER_SENTINEL || (industry !== '' && !INDUSTRIES.includes(industry));
+  const [selectValue, setSelectValue] = useState(isOther ? OTHER_SENTINEL : industry);
+
+  const handleSelectChange = (value: string) => {
+    setSelectValue(value);
+    if (value !== OTHER_SENTINEL) {
+      onIndustryChange(value);
+    } else {
+      onIndustryChange('');
+    }
+  };
+
+  const handleOtherInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onIndustryChange(e.target.value);
+  };
+
   const primaryGoalFilled = primaryGoal.trim() && primaryGoal !== '_other_';
   const isValid = primaryGoalFilled && targetAudience.trim() && industry.trim();
 
@@ -61,16 +78,24 @@ export function PurposeStep({
         {/* Industry */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">Industry</Label>
-          <Select value={industry} onValueChange={onIndustryChange}>
+          <Select value={selectValue} onValueChange={handleSelectChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select an industry…" />
             </SelectTrigger>
             <SelectContent>
               {INDUSTRIES.map((ind) => (
-                <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+                <SelectItem key={ind} value={ind === 'Other' ? OTHER_SENTINEL : ind}>{ind}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {selectValue === OTHER_SENTINEL && (
+            <Input
+              placeholder="Please specify your industry"
+              value={industry}
+              onChange={handleOtherInputChange}
+              autoFocus
+            />
+          )}
         </div>
 
         {/* Primary Goal */}
@@ -95,20 +120,6 @@ export function PurposeStep({
             placeholder="e.g., Small business owners in the UK, Gen-Z fashion shoppers"
             value={targetAudience}
             onChange={(e) => onTargetAudienceChange(e.target.value)}
-          />
-        </div>
-
-        {/* Additional context (optional) */}
-        <div className="space-y-2">
-          <Label htmlFor="site-purpose" className="text-sm font-medium">
-            Additional context <span className="text-slate-400 font-normal">(optional)</span>
-          </Label>
-          <Textarea
-            id="site-purpose"
-            placeholder="Anything else the AI should know — known pain points, recent changes, competitor sites, etc."
-            value={sitePurpose}
-            onChange={(e) => onPurposeChange(e.target.value)}
-            className="min-h-[80px] resize-none"
           />
         </div>
 

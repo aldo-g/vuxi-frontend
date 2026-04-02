@@ -267,16 +267,16 @@ export function useWizardState(projectId?: number) {
         setCaptureJob(jobData);
         
         if (jobData.status === 'completed') {
-          const rawScreenshots: Array<{ url: string; filename?: string; path?: string; storageUrl?: string; [key: string]: unknown }> = jobData.results?.screenshots || [];
+          const rawScreenshots: Array<{ url: string; success?: boolean; filename?: string; path?: string; storageUrl?: string; data?: { filename?: string; path?: string; storageUrl?: string; timestamp?: string }; [key: string]: unknown }> = jobData.results?.screenshots || [];
           const screenshots = rawScreenshots.map(s => ({
             url: s.url as string,
             success: true,
             data: {
               url: s.url as string,
-              filename: s.filename as string | undefined,
-              path: s.path as string | undefined,
-              storageUrl: s.storageUrl as string | undefined,
-              timestamp: s.timestamp as string | undefined,
+              filename: (s.data?.filename ?? s.filename) as string | undefined,
+              path: (s.data?.path ?? s.path) as string | undefined,
+              storageUrl: (s.data?.storageUrl ?? s.storageUrl) as string | undefined,
+              timestamp: (s.data?.timestamp ?? s.timestamp) as string | undefined,
             }
           }));
           updateAnalysisData({ screenshots });

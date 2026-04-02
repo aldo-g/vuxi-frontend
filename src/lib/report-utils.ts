@@ -51,10 +51,11 @@ export const getScreenshotUrl = (screenshot: Screenshot, jobId: string): string 
   const screenshotData = screenshot.success ? screenshot.data : null;
 
   if (!screenshotData) {
-    return `http://localhost:3001/data/job_${jobId}/desktop/placeholder.png`;
+    const pipelineUrl = process.env.NEXT_PUBLIC_PIPELINE_URL || 'http://localhost:3001';
+    return `${pipelineUrl}/data/job_${jobId}/desktop/placeholder.png`;
   }
 
-  const baseUrl = `http://localhost:3001/data/job_${jobId}`;
+  const baseUrl = `${process.env.NEXT_PUBLIC_PIPELINE_URL || 'http://localhost:3001'}/data/job_${jobId}`;
 
   // Priority 1: Supabase / fully-qualified Storage URL only
   if (
