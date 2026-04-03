@@ -485,15 +485,19 @@ export function useWizardState(projectId?: number) {
           captureJobId
         );
       } else if (state.analysisData.screenshots?.length) {
-        // Persist any screenshots added/modified at the review step before analysis starts
-        fetch('/api/capture/sync-screenshots', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            captureJobId,
-            screenshots: state.analysisData.screenshots,
-          }),
-        }).catch((err) => console.warn('Screenshot sync failed (non-blocking):', err));
+        // Persist screenshots added/modified at the review step before analysis starts
+        try {
+          await fetch('/api/capture/sync-screenshots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              captureJobId,
+              screenshots: state.analysisData.screenshots,
+            }),
+          });
+        } catch (err) {
+          console.warn('Screenshot sync failed (non-blocking):', err);
+        }
       }
 
       const response = await fetch('/api/start-analysis', {
@@ -502,7 +506,8 @@ export function useWizardState(projectId?: number) {
         body: JSON.stringify({
           analysisData: {
             ...state.analysisData,
-            userId: user?.id
+            userId: user?.id,
+            screenshots: state.analysisData.screenshots,
           },
           captureJobId
         })

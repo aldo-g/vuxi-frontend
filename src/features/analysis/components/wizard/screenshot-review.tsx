@@ -149,15 +149,23 @@ export function ScreenshotReview({
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-slate-900" />
         </div>
-        <CardTitle className="text-2xl font-semibold">Review Captured Screenshots</CardTitle>
-        <p className="text-slate-600 mt-2">
-          Review the captured screenshots and start the AI analysis when ready.
+        <CardTitle className="text-2xl font-bold tracking-tight">Review your captures</CardTitle>
+        <p className="text-slate-500 mt-2 max-w-md mx-auto">
+          Take a moment to check what was grabbed. Some pages may have been missed due to auth, bot protection, or lazy loading — that&apos;s totally normal.
         </p>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Heads-up notice */}
+        <div className="flex gap-3 p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-indigo-700 leading-relaxed">
+            <strong>The more pages the better.</strong> If anything looks incomplete, upload your own screenshots using the &quot;Add new page&quot; button below — a good mix of pages gives the AI a much fuller picture of your site.
+          </p>
+        </div>
+
         {/* Screenshot Grid */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Captured Pages ({new Set(screenshots.map(s => s.url)).size})</h3>
@@ -259,7 +267,7 @@ export function ScreenshotReview({
             onClick={onStartAnalysis}
             disabled={screenshots.length === 0 || isAnalyzing || !organizationName || !primaryGoal}
             title={!organizationName || !primaryGoal ? 'Fill in Organization and Primary goal before starting analysis' : undefined}
-            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
           >
             <Zap className="w-4 h-4 mr-2" />
             {isAnalyzing ? 'Starting Analysis...' : 'Start AI Analysis'}

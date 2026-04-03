@@ -60,8 +60,8 @@ function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJo
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="w-8 h-8 text-white animate-spin" />
+        <div className="w-16 h-16 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Loader2 className="w-8 h-8 text-slate-900 animate-spin" />
         </div>
         <CardTitle className="text-2xl font-semibold">Analyzing Your Website</CardTitle>
         <p className="text-slate-600 mt-2">
@@ -101,7 +101,7 @@ function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJo
             {analysisJob.status === 'completed' && (
               <button
                 onClick={handleViewReport}
-                className="flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all"
+                className="flex items-center justify-center w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
               >
                 View Your Report
               </button>

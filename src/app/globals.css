@@ -19,6 +19,8 @@
 
 @layer base {
   :root {
+    color-scheme: light;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -113,104 +115,197 @@
   body {
     @apply bg-background text-foreground;
   }
-}@tailwind base;
-@tailwind components;
-@tailwind utilities;
+}
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+/* =============================================
+   PDF / Print Styles
+   ============================================= */
+@media print {
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  /* Hide non-content UI */
+  .print-hide,
+  [data-print-hide] {
+    display: none !important;
+  }
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+  /* Remove backgrounds/shadows that don't print well */
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  /* Ensure gradients and colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+  /* Remove min-h-screen so pages flow naturally */
+  .min-h-screen {
+    min-height: unset !important;
+  }
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+  /* Show all tab contents in print mode (override Radix hidden state) */
+  [role="tabpanel"][data-state="inactive"],
+  [role="tabpanel"][hidden] {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    pointer-events: none;
+  }
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+  /* Expand all accordions/collapsibles — JS beforeprint handler opens them,
+     but CSS covers the case where the handler hasn't fired yet */
+  [data-state="open"] > [data-radix-accordion-content],
+  [data-radix-accordion-content],
+  [data-radix-collapsible-content] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    animation: none !important;
+  }
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+  /* Show all nested section tab panels */
+  .print-section-panel {
+    display: block !important;
+  }
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+  /* Section dividers for print-only headings */
+  .print-only {
+    display: block !important;
+  }
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Page breaks */
+  .page-break-before {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .page-break-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Prevent orphaned headers */
+  h1, h2, h3, h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Fix tab list — hide the tab buttons themselves (we'll show section headings instead) */
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  /* Show section tab nav for nested analysis sections */
+  .print-section-nav {
+    display: none !important;
+  }
+
+  /* Ensure all section content panels in nested tabs are shown */
+  .print-section-content > div,
+  .screen-only-hidden {
+    display: block !important;
+  }
+
+  /* Remove hover effects and transitions */
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Fix backdrop blur (not supported in print) */
+  .backdrop-blur-md,
+  .backdrop-blur-sm {
+    backdrop-filter: none !important;
+  }
+
+  /* Score ring — hide the whole animated ring container; print-score-display shows instead */
+  .score-ring-container {
+    display: none !important;
+  }
+
+  /* Show print score display */
+  .print-score-display {
+    display: flex !important;
+  }
+
+  /* Avoid breaking cards across pages */
+  .page-break-avoid,
+  [class*="rounded-2xl"],
+  [class*="rounded-xl"] {
+    break-inside: avoid;
+  }
+
+  /* Tab content section headers (print-only labels) */
+  .print-tab-heading {
+    display: block !important;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  /* Links - show URL in parentheses */
+  a[href]::after {
+    content: none !important;
+  }
+
+  /* Remove shadows for cleaner print */
+  [class*="shadow"] {
+    box-shadow: none !important;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+/* Hide print-only elements on screen */
+.print-only {
+  display: none;
+}
 
-  body {
-    @apply bg-background text-foreground;
+.print-score-display {
+  display: none;
+}
+
+.print-tab-heading {
+  display: none;
+}
+
+/* Hidden on screen, visible in print (for nested section panels) */
+.screen-only-hidden {
+  display: none;
+}
+
+/* Atmospheric text gradient — desaturated beige→slate→teal */
+.text-gradient-atmo {
+  background: linear-gradient(
+    105deg,
+    hsl(210 18% 38%) 0%,
+    hsl(195 20% 42%) 40%,
+    hsl(185 15% 40%) 70%,
+    hsl(210 12% 35%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  /* Forced-colors fallback */
+  forced-color-adjust: none;
+}
+@media (forced-colors: active) {
+  .text-gradient-atmo {
+    -webkit-text-fill-color: unset;
+    color: CanvasText;
   }
 }

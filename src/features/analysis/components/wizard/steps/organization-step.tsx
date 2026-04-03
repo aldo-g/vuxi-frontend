@@ -20,10 +20,10 @@ export function OrganizationStep({
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Building2 className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Building2 className="w-8 h-8 text-slate-900" />
         </div>
-        <CardTitle className="text-2xl font-semibold">Organization Details</CardTitle>
+        <CardTitle className="text-2xl font-bold tracking-tight">Organization Details</CardTitle>
         <p className="text-slate-600 mt-2">
           Tell us about the organization whose website we're analyzing.
         </p>
@@ -57,7 +57,7 @@ export function OrganizationStep({
           <Button 
             onClick={onNext}
             disabled={!organizationName.trim()}
-            className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
           >
             Continue
             <ArrowRight className="w-4 h-4 ml-2" />

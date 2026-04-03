@@ -25,8 +25,7 @@ import remarkGfm from 'remark-gfm';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, Home, ImageOff, MessageSquareHeart, X, ChevronLeft, ChevronRight, Bug } from "lucide-react";
-import { FormattedDate } from "@/components/common/formatted-date";
+import { ExternalLink, FileText, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Info, ImageOff, MessageSquareHeart, X, ChevronLeft, ChevronRight, Bug } from "lucide-react";
 
 // --- Interfaces and Helper Functions ---
 interface PageIssue {
@@ -357,6 +356,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     const normalizeUrlKey = (u: string) => {
       try {
         const parsed = new URL(u);
+        parsed.hostname = parsed.hostname.replace(/^www\./, '');
         if (parsed.pathname === '/') parsed.pathname = '';
         return parsed.href.replace(/\/$/, '');
       } catch {
@@ -364,8 +364,12 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
       }
     };
     const normalizedPageUrl = normalizeUrlKey(pageData.url);
+    console.log('[screenshots debug] pageData.url:', pageData.url, 'normalized:', normalizedPageUrl);
+    console.log('[screenshots debug] screenshotsByUrl keys:', screenshotsByUrl ? Object.keys(screenshotsByUrl) : 'null');
+    console.log('[screenshots debug] screenshotsMap keys:', screenshotsMap ? Object.keys(screenshotsMap).slice(0, 5) : 'null');
     if (screenshotsByUrl) {
       const shots = screenshotsByUrl[normalizedPageUrl] ?? screenshotsByUrl[pageData.url];
+      console.log('[screenshots debug] shots found:', shots);
       if (shots) {
         return shots.map((src, i) => ({
           filename: src.split('/').pop() || `screenshot-${i}`,
@@ -466,8 +470,8 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Error Loading Report Data</h1>
           <p className="text-slate-600 mb-8 text-lg">Could not load data for report ID: {reportId}.</p>
           {reportError && <pre className="text-xs text-red-700 bg-red-50 p-4 rounded-md text-left mt-4">{reportError.message}</pre>}
-          <Link href="/reports" className="mt-8 inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-            <Home size={18}/> Back to Report List
+          <Link href="/dashboard" className="mt-8 inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+            <ChevronLeft size={18}/> Back to Dashboard
           </Link>
         </div>
       </div>
@@ -516,17 +520,22 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
     <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-10">
-          <Link href={`/report/${reportId}`} className="inline-flex items-center gap-3 text-slate-600 hover:text-blue-600">
-            <Home className="w-5 h-5" />
+        <div className="mb-10 print-hide">
+          <Link href={`/report/${reportId}`} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Report Overview
           </Link>
         </div>
 
         <header className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">{pageData.title}</h1>
-          <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="text-lg text-blue-600 hover:underline break-all">
-            {pageData.url} <ExternalLink size={16} className="inline-block ml-1"/>
+          <p className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-2">Page Analysis</p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 tracking-tight">
+            <span className="text-gradient-atmo">
+              {pageData.title}
+            </span>
+          </h1>
+          <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-base text-slate-500 hover:text-blue-600 transition-colors break-all">
+            {pageData.url} <ExternalLink size={14} className="inline-block flex-shrink-0"/>
           </a>
         </header>
         
@@ -564,7 +573,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                 <CardTitle className="text-2xl font-semibold text-slate-900 text-center">Page Score</CardTitle>
               </CardHeader>
               <CardContent className="p-0 flex-grow flex flex-col items-center justify-center">
-                <div className="relative mb-6">
+                <div className="relative mb-6 score-ring-container">
                   <svg className="score-ring transform -rotate-90" width="120" height="120">
                     <circle cx="60" cy="60" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
                     <circle
@@ -579,6 +588,12 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                       <div className="text-3xl font-bold text-slate-900">{pageData.overall_score}</div>
                       <div className="text-sm text-slate-500 font-medium">/10</div>
                     </div>
+                  </div>
+                </div>
+                {/* Print fallback for score ring */}
+                <div className="print-score-display items-center justify-center mb-4">
+                  <div className={`text-5xl font-bold px-6 py-4 rounded-2xl border-2 ${getScoreBoxClasses(pageData.overall_score)}`}>
+                    {pageData.overall_score}<span className="text-2xl font-medium">/10</span>
                   </div>
                 </div>
                 <div className="text-center w-full">
@@ -602,7 +617,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
         {/* Tabs Section */}
         <div className="bg-white/90 backdrop-blur-md rounded-2xl border shadow-xl">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="border-b px-4 py-3">
+            <div className="border-b px-4 py-3 print-hide">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:flex md:w-auto bg-transparent p-0 h-auto gap-1 sm:gap-2 justify-start overflow-x-auto scrollbar-hide">
                 {[
                   { id: 'tab-detailed', label: 'Detailed Analysis' },
@@ -627,6 +642,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
             </div>
             
             <TabsContent value="tab-detailed" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+              <h3 className="print-tab-heading">Detailed Analysis</h3>
               <div className="space-y-8">
                 <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/60 rounded-xl border border-blue-100/70 p-6 sm:p-8">
                   <div className="flex items-center gap-3 mb-4">
@@ -644,7 +660,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
 
                 {analysisSections.length > 0 ? (
                   <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                    <div className="border-b border-slate-200 bg-slate-50/90 backdrop-blur-sm px-2 py-2">
+                    <div className="border-b border-slate-200 bg-slate-50/90 backdrop-blur-sm px-2 py-2 print-hide">
                       <div className="grid w-full grid-cols-2 sm:grid-cols-3 md:flex md:w-auto bg-transparent p-0 h-auto gap-1 justify-start overflow-x-auto scrollbar-hide">
                         {analysisSections.map((section, index) => (
                           <button
@@ -666,73 +682,75 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                         ))}
                       </div>
                     </div>
-                    <div className="p-6 sm:p-8">
+                    <div className="p-6 sm:p-8 print-section-content">
                       {analysisSections.map((section, index) => (
-                        activeNestedTab === `section-${index}` && (
-                          <div key={`section-content-${index}`} className="space-y-6">
-                            {section.summary && section.summary !== "Summary not available." && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Section Summary</h5>
-                                <p className="text-slate-700 leading-relaxed text-sm">{section.summary}</p>
+                        <div
+                          key={`section-content-${index}`}
+                          className={`space-y-6 ${activeNestedTab === `section-${index}` ? '' : 'screen-only-hidden'}`}
+                        >
+                          <h4 className="print-tab-heading">{index + 1}. {section.title} — {section.score}/10</h4>
+                          {section.summary && section.summary !== "Summary not available." && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Section Summary</h5>
+                              <p className="text-slate-700 leading-relaxed text-sm">{section.summary}</p>
+                            </div>
+                          )}
+                          {section.points && section.points.length > 0 && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Key Points</h5>
+                              <ul className="space-y-2">
+                                {section.points.map((point: string, idx: number) => (
+                                  <li key={idx} className="flex items-start gap-2.5">
+                                    <div className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${getProgressColorClass(section.score)}`}/>
+                                    <span className="text-slate-700 text-sm leading-relaxed">{point}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {section.evidence && section.evidence !== "Evidence not specified." && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Evidence Cited</h5>
+                              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600 italic">
+                                {section.evidence}
                               </div>
-                            )}
-                            {section.points && section.points.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Key Points</h5>
-                                <ul className="space-y-2">
-                                  {section.points.map((point: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2.5">
-                                      <div className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${getProgressColorClass(section.score)}`}/>
-                                      <span className="text-slate-700 text-sm leading-relaxed">{point}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {section.evidence && section.evidence !== "Evidence not specified." && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Evidence Cited</h5>
-                                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs text-slate-600 italic">
-                                  {section.evidence}
+                            </div>
+                          )}
+                          {typeof section.score === 'number' && (
+                            <div className="mb-4">
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Section Score</h5>
+                              <div className="flex items-center gap-3">
+                                <div className="flex-grow bg-slate-200 rounded-full h-2.5">
+                                  <div
+                                    className={`h-2.5 rounded-full ${getProgressColorClass(section.score)}`}
+                                    style={{ width: `${(section.score / 10) * 100}%`, transition: 'width 0.5s ease-in-out' }}
+                                  ></div>
                                 </div>
+                                <span className={`text-sm font-bold ${getScoreColorTextClass(section.score)}`}>{section.score}/10</span>
                               </div>
-                            )}
-                            {typeof section.score === 'number' && (
-                              <div className="mb-4">
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Section Score</h5>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex-grow bg-slate-200 rounded-full h-2.5">
-                                    <div
-                                      className={`h-2.5 rounded-full ${getProgressColorClass(section.score)}`}
-                                      style={{ width: `${(section.score / 10) * 100}%`, transition: 'width 0.5s ease-in-out' }}
-                                    ></div>
-                                  </div>
-                                  <span className={`text-sm font-bold ${getScoreColorTextClass(section.score)}`}>{section.score}/10</span>
-                                </div>
+                            </div>
+                          )}
+                          {section.score_explanation && section.score_explanation !== "Score explanation not provided." && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Score Explanation</h5>
+                              <p className="text-slate-700 leading-relaxed text-sm">{section.score_explanation}</p>
+                            </div>
+                          )}
+                          {(!section.summary || section.summary === "Summary not available.") &&
+                           (!section.points || section.points.length === 0) &&
+                           (!section.evidence || section.evidence === "Evidence not specified.") &&
+                           (!section.score_explanation || section.score_explanation === "Score explanation not provided.") &&
+                           section.rawContent && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Detailed Observations</h5>
+                              <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {section.rawContent}
+                                </ReactMarkdown>
                               </div>
-                            )}
-                            {section.score_explanation && section.score_explanation !== "Score explanation not provided." && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Score Explanation</h5>
-                                <p className="text-slate-700 leading-relaxed text-sm">{section.score_explanation}</p>
-                              </div>
-                            )}
-                            {(!section.summary || section.summary === "Summary not available.") &&
-                             (!section.points || section.points.length === 0) &&
-                             (!section.evidence || section.evidence === "Evidence not specified.") &&
-                             (!section.score_explanation || section.score_explanation === "Score explanation not provided.") &&
-                             section.rawContent && (
-                              <div>
-                                <h5 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Detailed Observations</h5>
-                                <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed">
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {section.rawContent}
-                                  </ReactMarkdown>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -746,6 +764,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
             </TabsContent>
 
             <TabsContent value="tab-issues" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+              <h3 className="print-tab-heading">Key Issues</h3>
               <div className="space-y-6">
                 {(pageData.key_issues && pageData.key_issues.length > 0) ? (
                   pageData.key_issues.map((issueObj, index) => (
@@ -777,6 +796,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
             </TabsContent>
 
             <TabsContent value="tab-recommendations" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+              <h3 className="print-tab-heading">Recommendations</h3>
               <div className="space-y-6">
                 {(pageData.recommendations && pageData.recommendations.length > 0) ? (
                   pageData.recommendations.map((recObj, index) => (
@@ -807,11 +827,51 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               </div>
             </TabsContent>
 
-<TabsContent value="tab-screenshot" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+<TabsContent value="tab-screenshot" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none print-hide">
               {pageScreenshots.length > 0 ? (
                 <>
                   <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Page Screenshots</h3>
                   <p className="text-slate-500 text-sm mb-6">{pageScreenshots.length} capture{pageScreenshots.length !== 1 ? 's' : ''} — click any image to enlarge</p>
+                  {/* Expanded inline view */}
+                  {lightboxIndex !== null && (
+                    <div className="mb-6 rounded-2xl border-2 border-blue-200 bg-slate-50 shadow-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
+                        <div className="flex items-center gap-3">
+                          {lightboxIndex > 0 && (
+                            <button
+                              onClick={() => setLightboxIndex(lightboxIndex - 1)}
+                              className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                          )}
+                          <span className="text-sm font-medium text-slate-600">
+                            {lightboxIndex + 1} / {pageScreenshots.length} — {pageScreenshots[lightboxIndex].filename.replace(/\.\w+$/, '').replace(/^\d+_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                          </span>
+                          {lightboxIndex < pageScreenshots.length - 1 && (
+                            <button
+                              onClick={() => setLightboxIndex(lightboxIndex + 1)}
+                              className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setLightboxIndex(null)}
+                          className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <img
+                        src={pageScreenshots[lightboxIndex].src}
+                        alt={pageScreenshots[lightboxIndex].filename}
+                        className="w-full object-contain max-h-[75vh]"
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {pageScreenshots.map((shot, i) => {
                       const label = shot.filename
@@ -819,11 +879,12 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                         .replace(/^\d+_/, '')
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, c => c.toUpperCase());
+                      const isActive = lightboxIndex === i;
                       return (
                         <button
                           key={shot.filename}
-                          onClick={() => setLightboxIndex(i)}
-                          className="group relative rounded-xl overflow-hidden border-2 border-slate-200 shadow hover:shadow-lg hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+                          onClick={() => setLightboxIndex(isActive ? null : i)}
+                          className={`group relative rounded-xl overflow-hidden border-2 shadow transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 ${isActive ? 'border-blue-500 shadow-blue-200' : 'border-slate-200 hover:shadow-lg hover:border-blue-400'}`}
                         >
                           <img
                             src={shot.src}
@@ -837,47 +898,6 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                       );
                     })}
                   </div>
-
-                  {/* Lightbox */}
-                  {lightboxIndex !== null && (
-                    <div
-                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-                      onClick={() => setLightboxIndex(null)}
-                    >
-                      <button
-                        className="absolute top-4 right-4 text-white/80 hover:text-white"
-                        onClick={() => setLightboxIndex(null)}
-                      >
-                        <X className="w-8 h-8" />
-                      </button>
-                      {lightboxIndex > 0 && (
-                        <button
-                          className="absolute left-4 text-white/80 hover:text-white"
-                          onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
-                        >
-                          <ChevronLeft className="w-10 h-10" />
-                        </button>
-                      )}
-                      {lightboxIndex < pageScreenshots.length - 1 && (
-                        <button
-                          className="absolute right-4 text-white/80 hover:text-white"
-                          onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
-                        >
-                          <ChevronRight className="w-10 h-10" />
-                        </button>
-                      )}
-                      <div className="max-w-5xl max-h-[90vh] mx-16 flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        <img
-                          src={pageScreenshots[lightboxIndex].src}
-                          alt={pageScreenshots[lightboxIndex].filename}
-                          className="max-h-[80vh] w-auto rounded-xl shadow-2xl object-contain"
-                        />
-                        <p className="text-white/70 text-sm">
-                          {lightboxIndex + 1} / {pageScreenshots.length} — {pageScreenshots[lightboxIndex].filename.replace(/\.\w+$/, '').replace(/^\d+_/, '').replace(/_/g, ' ')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </>
               ) : (
                 <div className="text-center py-16 sm:py-20">
@@ -897,7 +917,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
       {/* Floating Bug Report Button */}
       <button
         onClick={() => setBugReportOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
+        className="print-hide fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
         aria-label="Report an issue"
       >
         <Bug className="w-4 h-4" />

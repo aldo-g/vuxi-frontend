@@ -26,7 +26,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ExternalLink, ChevronRight, Zap, Lightbulb, ListChecks, MapIcon, Palette, Trophy, Route, FileText, TrendingUp, ShieldCheck, MessageSquareHeart, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, Home, AlertCircle, Bug, X } from "lucide-react";
+import { ExternalLink, ChevronRight, Zap, Lightbulb, ListChecks, MapIcon, Palette, Trophy, Route, FileText, TrendingUp, ShieldCheck, MessageSquareHeart, Target as TargetIcon, CheckCircle2, AlertTriangleIcon, AlertCircle, Bug, X, Download } from "lucide-react";
 
 // Migrated Components
 import { ExecutiveSummary } from "@/features/reports";
@@ -124,6 +124,116 @@ const getOverallScoreStatusText = (score: number) => {
   return "Needs Work";
 };
 
+const getProgressColorClass = (score: number): string => {
+  if (score >= 8) return "bg-emerald-500";
+  if (score >= 6) return "bg-green-500";
+  if (score >= 4) return "bg-amber-500";
+  return "bg-red-500";
+};
+
+const getScoreColorTextClass = (score: number): string => {
+  if (score >= 8) return "text-emerald-600";
+  if (score >= 6) return "text-green-600";
+  if (score >= 4) return "text-amber-600";
+  return "text-red-600";
+};
+
+const extractPageRoleAnalysis = (content: string | undefined): string | null => {
+  if (!content) return null;
+  const lines = content.split('\n');
+  let pageRoleContent: string[] = [];
+  let inPageRoleSection = false;
+  const pageRoleKeywords = ['PAGE ROLE ANALYSIS', 'PAGE ROLE:', 'ROLE OF THIS PAGE:'];
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+    const upperLine = trimmedLine.toUpperCase();
+    if (pageRoleKeywords.some(keyword => upperLine.startsWith(keyword))) {
+      inPageRoleSection = true;
+      const contentAfterKeyword = trimmedLine.substring(upperLine.indexOf(':') + 1).trim();
+      if (contentAfterKeyword) pageRoleContent.push(contentAfterKeyword);
+    } else if (trimmedLine.startsWith('## ') && inPageRoleSection) {
+      if (!pageRoleKeywords.some(keyword => upperLine.startsWith(keyword))) inPageRoleSection = false;
+    } else if (inPageRoleSection && trimmedLine && !trimmedLine.toUpperCase().includes('EVIDENCE:')) {
+      pageRoleContent.push(trimmedLine);
+    }
+  });
+  const result = pageRoleContent.join(' ').trim();
+  return result || null;
+};
+
+const parseDetailedAnalysisSections = (content: string | undefined, sectionScores: { [key: string]: number } = {}): Array<{ name: string; title: string; score: number; summary: string; points: string[]; evidence: string; score_explanation: string; rawContent?: string }> => {
+  if (!content) return [];
+  const lines = content.split('\n');
+  const parsedSections: Array<{ name: string; title: string; score: number; summary: string; points: string[]; evidence: string; score_explanation: string; rawContent?: string }> = [];
+  const titleToScoreKey: { [key: string]: string } = {
+    'FIRST IMPRESSION & CLARITY': 'first_impression_clarity',
+    'GOAL ALIGNMENT': 'goal_alignment',
+    'VISUAL DESIGN': 'visual_design',
+    'CONTENT QUALITY': 'content_quality',
+    'USABILITY & ACCESSIBILITY': 'usability_accessibility',
+    'CONVERSION OPTIMIZATION': 'conversion_optimization',
+    'TECHNICAL EXECUTION': 'technical_execution'
+  };
+  let currentSectionData: { title?: string; name?: string; score?: number; summary?: string; points?: string[]; evidence?: string; score_explanation?: string; contentBuffer?: string[] } = {};
+  let collectingEvidence = false;
+
+  const finalizeSection = () => {
+    if (currentSectionData.title) {
+      const scoreKey = titleToScoreKey[currentSectionData.title.toUpperCase() as keyof typeof titleToScoreKey];
+      const scoreValue = scoreKey ? sectionScores[scoreKey] : undefined;
+      const sectionRawScoreMatch = currentSectionData.title.match(/\(Score:\s*(\d+)\/10\)/i);
+      let finalScore = 5;
+      if (typeof scoreValue === 'number') finalScore = scoreValue;
+      else if (sectionRawScoreMatch?.[1]) finalScore = parseInt(sectionRawScoreMatch[1], 10);
+      else if (typeof currentSectionData.score === 'number') finalScore = currentSectionData.score;
+      const cleanTitle = currentSectionData.title.replace(/\s*\(Score:\s*\d+\/10\)/i, '').trim();
+      parsedSections.push({
+        name: currentSectionData.name || cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+        title: cleanTitle,
+        score: finalScore,
+        summary: currentSectionData.summary || "Summary not available.",
+        points: currentSectionData.points || [],
+        evidence: currentSectionData.evidence || "Evidence not specified.",
+        score_explanation: currentSectionData.score_explanation || "Score explanation not provided.",
+        rawContent: (currentSectionData.contentBuffer || []).join('\n').trim() || undefined,
+      });
+    }
+    currentSectionData = {};
+    collectingEvidence = false;
+  };
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    const sectionMatch = trimmedLine.match(/^##\s*\d*\.?\s*([^(\n]+)(?:\s*\(Score:\s*(\d+)\/10\))?/i);
+    if (sectionMatch) {
+      finalizeSection();
+      currentSectionData.title = sectionMatch[1].trim();
+      currentSectionData.name = currentSectionData.title.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      currentSectionData.points = [];
+      currentSectionData.contentBuffer = [];
+      if (sectionMatch[2]) currentSectionData.score = parseInt(sectionMatch[2], 10);
+      collectingEvidence = false;
+    } else if (currentSectionData.title) {
+      if (trimmedLine.toUpperCase().startsWith('EVIDENCE:')) {
+        collectingEvidence = true;
+        currentSectionData.evidence = trimmedLine.substring(9).trim();
+      } else if (collectingEvidence) {
+        currentSectionData.evidence += `\n${trimmedLine}`;
+      } else if (trimmedLine.startsWith('- ')) {
+        (currentSectionData.points = currentSectionData.points || []).push(trimmedLine.substring(2).trim());
+      } else if (trimmedLine.toUpperCase().startsWith('SUMMARY:')) {
+        currentSectionData.summary = trimmedLine.substring(8).trim();
+      } else if (trimmedLine.toUpperCase().startsWith('SCORE EXPLANATION:')) {
+        currentSectionData.score_explanation = trimmedLine.substring(18).trim();
+      } else if (trimmedLine) {
+        (currentSectionData.contentBuffer = currentSectionData.contentBuffer || []).push(trimmedLine);
+      }
+    }
+  }
+  finalizeSection();
+  return parsedSections;
+};
+
 const MarkdownSectionRenderer: React.FC<{
     title: string; mainContent: string; subsections: Array<{ title: string; content: string }>;
     performanceSummary?: string; goalAchievementAssessment?: string;
@@ -155,28 +265,40 @@ const MarkdownSectionRenderer: React.FC<{
         {subsections && subsections.length > 0 && (
             <div className="space-y-4">
                 {subsections.map((sub, idx) => (
-                    <Accordion key={idx} type="single" collapsible className="w-full">
-                        <AccordionItem value={`subsection-${sectionKey}-${idx}`} className="border bg-white rounded-lg shadow-sm data-[state=open]:shadow-md overflow-hidden">
-                            <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:text-blue-600 py-4 px-6 bg-slate-50/80 hover:bg-slate-100/90 transition-colors w-full text-left data-[state=open]:bg-slate-100 data-[state=open]:border-b border-slate-200">
+                    <div key={idx}>
+                        {/* Screen: collapsible accordion */}
+                        <Accordion type="single" collapsible className="w-full print-hide">
+                            <AccordionItem value={`subsection-${sectionKey}-${idx}`} className="border bg-white rounded-lg shadow-sm data-[state=open]:shadow-md overflow-hidden">
+                                <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:text-blue-600 py-4 px-6 bg-slate-50/80 hover:bg-slate-100/90 transition-colors w-full text-left data-[state=open]:bg-slate-100 data-[state=open]:border-b border-slate-200">
+                                    {sub.title}
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-4 pb-6 px-6">
+                                    <div className="prose prose-base max-w-none text-slate-600 leading-relaxed">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{sub.content}</ReactMarkdown>
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                        {/* Print: always visible */}
+                        <div className="print-only border bg-white rounded-lg overflow-hidden">
+                            <div className="text-lg font-semibold text-slate-700 py-4 px-6 bg-slate-50/80 border-b border-slate-200">
                                 {sub.title}
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-4 pb-6 px-6">
-                                <div className="prose prose-base max-w-none text-slate-600 leading-relaxed">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{sub.content}</ReactMarkdown>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
+                            </div>
+                            <div className="pt-4 pb-6 px-6 prose prose-base max-w-none text-slate-600 leading-relaxed">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{sub.content}</ReactMarkdown>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
         )}
         {sectionKey === 'key-findings' && performanceSummary && (
-            <div className="p-6 bg-purple-50/70 border border-purple-200/80 rounded-xl shadow-sm mt-6">
+            <div className="p-6 bg-indigo-50/70 border border-indigo-200/80 rounded-xl shadow-sm mt-6">
                 <div className="flex items-center gap-3 mb-3">
-                    <Zap className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                    <h4 className="text-xl font-semibold text-purple-800">Performance Snapshot</h4>
+                    <Zap className="w-6 h-6 text-indigo-600 flex-shrink-0" />
+                    <h4 className="text-xl font-semibold text-indigo-800">Performance Snapshot</h4>
                 </div>
-                <p className="text-purple-700 leading-relaxed text-base">{performanceSummary}</p>
+                <p className="text-indigo-700 leading-relaxed text-base">{performanceSummary}</p>
             </div>
         )}
         {(!mainContent || !mainContent.trim()) && (!subsections || subsections.length === 0) && sectionKey !== 'key-findings' && (
@@ -406,16 +528,29 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
         <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="mb-10">
-                    <Link href="/dashboard" className="inline-flex items-center gap-3 text-slate-600 hover:text-blue-600 font-medium group">
-                        <Home className="w-5 h-5" /> All Reports
+                <div className="mb-10 flex items-center justify-between print-hide">
+                    <Link href={user ? "/dashboard" : "/"} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors group">
+                        <ChevronRight className="w-4 h-4 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
+                        {user ? "Dashboard" : "Home"}
                     </Link>
+                    <button
+                        onClick={() => window.print()}
+                        className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow transition-colors duration-200"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export PDF
+                    </button>
                 </div>
                 <header className="text-center mb-10">
-                    <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 tracking-tight">Website Analysis: {organizationName}</h1>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-2">UX Analysis Report</p>
+                    <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 tracking-tight">
+                        <span className="text-gradient-atmo">
+                            {organizationName}
+                        </span>
+                    </h1>
                     {analysisDate && (
-                      <p className="text-lg sm:text-xl text-slate-600">
-                          Comprehensive UX/UI evaluation conducted on <FormattedDate dateString={analysisDate} />.
+                      <p className="text-base text-slate-500">
+                          Conducted on <FormattedDate dateString={analysisDate} />
                       </p>
                     )}
                 </header>
@@ -442,7 +577,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 sm:p-8 flex flex-col items-center justify-center flex-1">
-                                <div className="relative mb-4">
+                                <div className="relative mb-4 score-ring-container">
                                     <svg className="score-ring transform -rotate-90" width="120" height="120">
                                         <circle cx="60" cy="60" r="45" fill="none" stroke="#e2e8f0" strokeWidth="8" />
                                         <circle className="score-ring-progress" cx="60" cy="60" r="45" fill="none" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 45}`} strokeDashoffset={`${2 * Math.PI * 45}`} style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1) .5s' }} />
@@ -452,6 +587,12 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                             <div className="text-3xl font-bold text-slate-900">{overallScore.toFixed(1)}</div>
                                             <div className="text-sm text-slate-500 font-medium">/10</div>
                                         </div>
+                                    </div>
+                                </div>
+                                {/* Print fallback for score ring */}
+                                <div className="print-score-display items-center justify-center mb-4">
+                                    <div className={`text-5xl font-bold px-6 py-4 rounded-2xl border-2 ${getScoreBoxClasses(overallScore)}`}>
+                                        {overallScore.toFixed(1)}<span className="text-2xl font-medium">/10</span>
                                     </div>
                                 </div>
                                 <div className="text-center w-full">
@@ -467,7 +608,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                 
                 {/* Detailed tabs section */}
                 <section className="mt-10">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-8">Detailed Findings</h2>
+                    <h2 className="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Detailed Findings</h2>
                     {Object.keys(parsedDetailedSections).filter(key => key !== 'executive-summary' && sectionDetails[key]).length > 0 ? (
                         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden">
                             <Tabs value={activeDetailedTab} onValueChange={setActiveDetailedTab} className="w-full">
@@ -502,6 +643,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                         if (key === 'executive-summary') return null;
                                         return parsedDetailedSections[key] && sectionDetails[key] && (
                                             <TabsContent key={key} value={key} className="mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
+                                                <h3 className="print-tab-heading">{sectionDetails[key]!.title}</h3>
                                                 <MarkdownSectionRenderer
                                                     title={parsedDetailedSections[key]!.title}
                                                     mainContent={parsedDetailedSections[key]!.content}
@@ -528,8 +670,8 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                     )}
                 </section>
 
-                <section className="mt-20">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-8">Page-by-Page Analysis</h2>
+                <section className="mt-20 print-hide">
+                    <h2 className="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Page-by-Page Analysis</h2>
                     <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
                         {pageAnalyses.map((page) => (
                             <Link key={page.id} href={`/report/${reportId}/page/${page.id}`} className="group block">
@@ -564,13 +706,130 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                         ))}
                     </div>
                 </section>
+
+                {/* ── Print-only: full page analyses ── */}
+                <section className="print-only mt-0">
+                    {pageAnalyses.map((page, pageIdx) => {
+                        const sections = page.sections && page.sections.length > 0
+                            ? page.sections.map(s => ({ ...s, score: typeof s.score === 'number' ? s.score : 5 }))
+                            : parseDetailedAnalysisSections(page.detailed_analysis || page.raw_analysis, page.section_scores || {});
+                        const pageRole = extractPageRoleAnalysis(page.detailed_analysis || page.raw_analysis);
+
+                        return (
+                            <div key={page.id} className="page-break-before mt-0">
+                                {/* Page header */}
+                                <div className="mb-6 pb-4 border-b-2 border-slate-200">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-slate-900">{page.title}</h2>
+                                            <p className="text-sm text-slate-500 font-mono mt-1">{page.url}</p>
+                                        </div>
+                                        <div className={`flex-shrink-0 text-xl font-bold px-4 py-2 rounded-xl border-2 ${getScoreBoxClasses(page.overall_score)}`}>
+                                            {page.overall_score}/10
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-700 mt-3 text-sm leading-relaxed">{page.summary}</p>
+                                    {page.overall_explanation && (
+                                        <p className="text-slate-600 mt-2 text-xs italic">{page.overall_explanation}</p>
+                                    )}
+                                </div>
+
+                                {/* Page Role */}
+                                {pageRole && (
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                        <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Page Role & Purpose</h4>
+                                        <div className="prose prose-sm max-w-none text-slate-700">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{pageRole}</ReactMarkdown>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Analysis sections */}
+                                {sections.length > 0 && (
+                                    <div className="mb-6">
+                                        <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">Analysis Sections</h4>
+                                        <div className="space-y-5">
+                                            {sections.map((section, idx) => (
+                                                <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-white page-break-avoid">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h5 className="font-bold text-slate-900 text-base">{idx + 1}. {section.title}</h5>
+                                                        <span className={`text-sm font-bold px-3 py-1 rounded-lg border ${getScoreBoxClasses(section.score)}`}>{section.score}/10</span>
+                                                    </div>
+                                                    {section.summary && section.summary !== "Summary not available." && (
+                                                        <p className="text-slate-700 text-sm leading-relaxed mb-3">{section.summary}</p>
+                                                    )}
+                                                    {section.points && section.points.length > 0 && (
+                                                        <ul className="space-y-1.5 mb-3">
+                                                            {section.points.map((point: string, i: number) => (
+                                                                <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                                                    <div className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${getProgressColorClass(section.score)}`} />
+                                                                    {point}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                    {section.evidence && section.evidence !== "Evidence not specified." && (
+                                                        <p className="text-xs text-slate-500 italic bg-slate-50 p-2 rounded border border-slate-100">{section.evidence}</p>
+                                                    )}
+                                                    {section.score_explanation && section.score_explanation !== "Score explanation not provided." && (
+                                                        <p className="text-xs text-slate-600 mt-2"><span className="font-semibold">Score rationale:</span> {section.score_explanation}</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Key Issues */}
+                                {page.key_issues && page.key_issues.length > 0 && (
+                                    <div className="mb-6 page-break-avoid">
+                                        <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Key Issues</h4>
+                                        <div className="space-y-3">
+                                            {page.key_issues.map((issue, idx) => (
+                                                <div key={idx} className="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                                                    <div className="flex-shrink-0 w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
+                                                    <div className="flex-1">
+                                                        <p className="text-slate-900 font-semibold text-sm">{issue.issue}</p>
+                                                        {issue.how_to_fix && (
+                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-red-700">Fix:</span> {issue.how_to_fix}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Recommendations */}
+                                {page.recommendations && page.recommendations.length > 0 && (
+                                    <div className="mb-2 page-break-avoid">
+                                        <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Recommendations</h4>
+                                        <div className="space-y-3">
+                                            {page.recommendations.map((rec, idx) => (
+                                                <div key={idx} className="flex gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                                    <div className="flex-shrink-0 w-7 h-7 bg-emerald-500 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
+                                                    <div className="flex-1">
+                                                        <p className="text-slate-900 font-semibold text-sm">{rec.recommendation}</p>
+                                                        {rec.benefit && (
+                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-emerald-700">Benefit:</span> {rec.benefit}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </section>
             </div>
         </div>
 
       {/* Floating Bug Report Button */}
       <button
         onClick={() => setBugReportOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
+        className="print-hide fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-3 rounded-full shadow-lg transition-colors duration-200"
         aria-label="Report an issue"
       >
         <Bug className="w-4 h-4" />

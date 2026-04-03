@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import prisma from '@/lib/database';
 import type { Screenshot } from '@/types';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// Extract the storage path from a full Supabase public URL
+function storagePathFromUrl(storageUrl: string): string | null {
+  try {
+    const url = new URL(storageUrl);
+    // Supabase public URLs look like: /storage/v1/object/public/screenshots/job_xxx/file.png
+    const match = url.pathname.match(/\/storage\/v1\/object\/public\/screenshots\/(.+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 interface SyncBody {
   captureJobId: string;
@@ -40,6 +58,32 @@ export async function POST(request: NextRequest) {
     // URLs present in DB but not in the new screenshots list should be removed
     const incomingUrls = new Set(byUrl.keys());
 
+    // Collect storage paths to delete (pages removed entirely + screenshots removed from kept pages)
+    const storagePathsToDelete: string[] = [];
+
+    for (const page of run.analyzedPages) {
+      if (!incomingUrls.has(page.url)) {
+        // Entire page removed — collect all its screenshot storage paths
+        for (const s of page.screenshots) {
+          const p = storagePathFromUrl(s.storageUrl);
+          if (p) storagePathsToDelete.push(p);
+        }
+      } else {
+        // Page kept — collect paths for screenshots that aren't in the incoming list
+        const incomingStorageUrls = new Set(
+          (byUrl.get(page.url) ?? []).map(
+            (s) => s.data?.storageUrl ?? s.data?.path ?? s.data?.filename ?? ''
+          )
+        );
+        for (const s of page.screenshots) {
+          if (!incomingStorageUrls.has(s.storageUrl)) {
+            const p = storagePathFromUrl(s.storageUrl);
+            if (p) storagePathsToDelete.push(p);
+          }
+        }
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       // Delete pages (and their screenshots) that were removed by the user
       for (const page of run.analyzedPages) {
@@ -51,26 +95,17 @@ export async function POST(request: NextRequest) {
 
       for (const [url, pageScreenshots] of byUrl) {
         if (existingUrls.has(url)) {
-          // URL already tracked — add only screenshots that aren't already there
+          // URL already tracked — replace all screenshots to reflect user edits (deletions + additions)
           const page = run.analyzedPages.find((p) => p.url === url)!;
-          const existingFilenames = new Set(page.screenshots.map((s) => s.filename ?? s.storageUrl));
+          await tx.screenshot.deleteMany({ where: { analyzedPageId: page.id } });
 
           for (const s of pageScreenshots) {
-            const filename = s.data?.filename ?? null;
-            const storageUrl = s.data?.storageUrl ?? s.data?.path ?? s.data?.filename ?? '';
-            // Skip if already recorded (match by filename or storageUrl)
-            if (
-              (filename && existingFilenames.has(filename)) ||
-              existingFilenames.has(storageUrl)
-            ) {
-              continue;
-            }
             await tx.screenshot.create({
               data: {
                 analyzedPageId: page.id,
                 url,
-                filename,
-                storageUrl,
+                filename: s.data?.filename ?? null,
+                storageUrl: s.data?.storageUrl ?? s.data?.path ?? s.data?.filename ?? '',
                 success: true,
                 viewport: 'desktop',
                 timestamp: s.data?.timestamp ? new Date(s.data.timestamp) : null,
@@ -103,6 +138,16 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Clean up deleted screenshots from storage (best-effort, non-blocking)
+    if (storagePathsToDelete.length > 0) {
+      supabase.storage
+        .from('screenshots')
+        .remove(storagePathsToDelete)
+        .then(({ error }) => {
+          if (error) console.warn('Storage cleanup partial failure:', error.message);
+        });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

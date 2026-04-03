@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { Name: name ?? null, email, passwordHash },
+      data: { Name: name ?? null, email, passwordHash, credits: 1 },
     });
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);

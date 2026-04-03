@@ -457,15 +457,14 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
-            Welcome to Vuxi
+        <div className="mb-10">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {projects.length > 0 ? 'Your projects' : 'Get started'}
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            {projects.length > 0 
-              ? "Access your UX analysis reports and explore insights from professional evaluations."
-              : "Get started by creating your first UX analysis to gain valuable insights."
-            }
+          <p className="text-slate-500 mt-1">
+            {projects.length > 0
+              ? 'Run a new analysis or view your latest report.'
+              : 'Create your first UX analysis to get insights.'}
           </p>
         </div>
 
@@ -473,24 +472,13 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
         <DashboardStats stats={stats} />
 
         {/* Quick Actions */}
-        <QuickActions userCredits={user?.credits ?? 0} />
+        <QuickActions
+          userCredits={user?.credits ?? 0}
+          latestReportId={projects.flatMap(p => p.analysisRuns?.filter(r => r.status === 'completed') ?? []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.id}
+        />
 
         {/* Projects Section */}
         <div className="mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900">
-                {projects.length > 0 ? 'Your Projects' : 'Get Started'}
-              </h2>
-              <p className="text-slate-600 mt-1">
-                {projects.length > 0
-                  ? `${projects.length} website${projects.length === 1 ? '' : 's'} · ${projects.reduce((acc, p) => acc + (p.analysisRuns?.length || 0), 0)} total report${projects.reduce((acc, p) => acc + (p.analysisRuns?.length || 0), 0) === 1 ? '' : 's'}`
-                  : 'Create your first UX analysis project'
-                }
-              </p>
-            </div>
-          </div>
-
           {/* Project List - Full Width Cards */}
           <div className="space-y-4">
             {projects.map((project) => (

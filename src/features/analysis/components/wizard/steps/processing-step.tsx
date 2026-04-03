@@ -76,14 +76,14 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
           {showUploader ? (
-            <Upload className="w-8 h-8 text-white" />
+            <Upload className="w-8 h-8 text-slate-900" />
           ) : (
-            <Camera className="w-8 h-8 text-white" />
+            <Camera className="w-8 h-8 text-slate-900" />
           )}
         </div>
-        <CardTitle className="text-2xl font-semibold">
+        <CardTitle className="text-2xl font-bold tracking-tight">
           {showUploader ? 'Upload Screenshots Manually' : 'Capturing Screenshots'}
         </CardTitle>
         <p className="text-slate-600 mt-2">
@@ -141,7 +141,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
                       onClick={() => setShowUploader(true)}
                       variant="outline"
                       size="sm"
-                      className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
                     >
                       <ImagePlus className="w-4 h-4 mr-1.5" />
                       Upload Screenshots Manually
@@ -159,7 +159,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
               <Button
                 onClick={onNext}
                 disabled={captureJob.status !== 'completed'}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 {captureJob.status === 'completed' ? (
                   <>
@@ -181,7 +181,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
           <>
             {/* Drop zone / file picker */}
             <div
-              className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
+              className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
@@ -225,7 +225,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
               <Button
                 onClick={handleProceedWithUploads}
                 disabled={uploadedFiles.length === 0}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 Continue with {uploadedFiles.length > 0 ? uploadedFiles.length : ''} Screenshot{uploadedFiles.length !== 1 ? 's' : ''}
                 <ArrowRight className="w-4 h-4 ml-2" />

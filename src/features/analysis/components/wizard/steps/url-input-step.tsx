@@ -18,10 +18,10 @@ export function UrlInputStep({
   return (
     <Card className="border-slate-200 bg-white shadow-lg">
       <CardHeader className="text-center pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Globe className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Globe className="w-8 h-8 text-slate-900" />
         </div>
-        <CardTitle className="text-2xl font-semibold">Enter Website URL</CardTitle>
+        <CardTitle className="text-2xl font-bold tracking-tight">Enter Website URL</CardTitle>
         <p className="text-slate-600 mt-2">
           Which website would you like to analyze? We'll start capturing data while you provide additional details.
         </p>
@@ -54,7 +54,7 @@ export function UrlInputStep({
         <Button 
           onClick={onNext}
           disabled={!websiteUrl || isLoading}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
           size="lg"
         >
           {isLoading ? (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 import prisma from '@/lib/database';
+import { PUBLIC_REPORT_IDS } from '@/lib/public-reports';
 
 async function getAuthenticatedUserId(): Promise<number | null> {
   const token = cookies().get('token')?.value;
@@ -61,15 +62,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { reportId: string } }
 ) {
-  const userId = await getAuthenticatedUserId();
-  if (!userId) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-
   const id = parseInt(params.reportId, 10);
 
   if (isNaN(id)) {
     return NextResponse.json({ error: 'Invalid report ID' }, { status: 400 });
+  }
+
+  const isPublic = PUBLIC_REPORT_IDS.includes(id);
+  const userId = isPublic ? null : await getAuthenticatedUserId();
+
+  if (!isPublic && !userId) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
   try {
@@ -85,7 +88,7 @@ export async function GET(
       },
     });
 
-    if (!run || run.project.userId !== userId) {
+    if (!run || (!isPublic && run.project.userId !== userId)) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
@@ -93,7 +96,19 @@ export async function GET(
       return NextResponse.json({ error: 'Report not yet available' }, { status: 404 });
     }
 
-    // Build filename -> storageUrl and pageUrl -> storageUrl[] maps for the frontend
+    // Build filename -> storageUrl and pageUrl -> storageUrl[] maps for the frontend.
+    // Query all AnalyzedPages for this captureJobId across all runs — sync-screenshots
+    // may have created pages on a sibling run if a second run was created between
+    // capture and sync.
+    const runsForJob = await prisma.analysisRun.findMany({
+      where: { captureJobId: run.captureJobId },
+      select: { id: true },
+    });
+    const allPagesForJob = await prisma.analyzedPage.findMany({
+      where: { runId: { in: runsForJob.map(r => r.id) } },
+      include: { screenshots: true },
+    });
+
     const screenshots: Record<string, string> = {};
     const screenshotsByUrl: Record<string, string[]> = {};
     const normalizeUrl = (u: string) => {
@@ -106,7 +121,7 @@ export async function GET(
         return u.replace(/\/$/, '');
       }
     };
-    for (const page of run.analyzedPages) {
+    for (const page of allPagesForJob) {
       const pageUrl = normalizeUrl(page.url);
       for (const shot of page.screenshots) {
         if (shot.filename && shot.storageUrl) {
