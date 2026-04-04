@@ -19,7 +19,7 @@ export default function CreateAnalysisPage() {
         <div className="mb-8">
           <Link 
             href="/dashboard" 
-            className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors duration-200 group"
+            className="inline-flex items-center gap-2 text-slate-600 hover:text-teal-700 transition-colors duration-200 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard

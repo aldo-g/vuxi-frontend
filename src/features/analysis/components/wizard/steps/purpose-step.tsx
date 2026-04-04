@@ -135,9 +135,9 @@ export function PurposeStep({
           <Button
             onClick={onNext}
             disabled={!isValid}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="flex-1 btn-atmo"
           >
-            Continue
+            Review screenshots
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

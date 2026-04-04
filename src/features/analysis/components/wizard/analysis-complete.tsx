@@ -24,7 +24,7 @@ export function AnalysisComplete({ onRestart }: AnalysisCompleteProps) {
       <CardContent className="space-y-6 text-center">
         <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
           <h3 className="text-lg font-semibold text-green-800 mb-2">
-            Your UX Analysis Report is Ready
+            Your Web Analysis Report is Ready
           </h3>
           <p className="text-green-700 mb-4">
             We've generated a comprehensive analysis of your website's user experience, 

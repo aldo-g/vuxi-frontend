@@ -61,10 +61,10 @@ interface ReportData {
 }
 
 const getScoreBoxClasses = (score: number): string => {
-  if (score >= 9) return "bg-emerald-100 text-emerald-800 border-emerald-300";
-  if (score >= 7) return "bg-green-100 text-green-800 border-green-300";
-  if (score >= 5) return "bg-yellow-100 text-yellow-800 border-yellow-300";
-  return "bg-red-100 text-red-700 border-red-300";
+  if (score >= 9) return "bg-teal-50 text-teal-800 border-teal-200";
+  if (score >= 7) return "bg-teal-50 text-teal-700 border-teal-200";
+  if (score >= 5) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
 };
 
 const getOverallScoreStatusText = (score: number) => {
@@ -110,7 +110,7 @@ export default function LiveReportPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-100">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-slate-400 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-xl text-slate-700">Loading Your Report...</p>
         </div>
       </div>
@@ -119,14 +119,14 @@ export default function LiveReportPage() {
 
   if (error || !reportData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100/30">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center p-8 bg-white shadow-xl rounded-2xl max-w-lg">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <AlertTriangleIcon className="w-10 h-10 text-red-500" />
+          <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <AlertTriangleIcon className="w-10 h-10 text-rose-500" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Report Not Found</h1>
           <p className="text-slate-600 mb-6 text-lg">{error}</p>
-          <Link href="/" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-2 btn-atmo text-white px-6 py-3 rounded-lg transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Start New Analysis
           </Link>
@@ -139,11 +139,11 @@ export default function LiveReportPage() {
   const organizationName = metadata?.organization_name || reportData.organization || 'Analysis Report';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 py-12">
+    <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Navigation */}
         <div className="mb-10">
-          <Link href="/" className="inline-flex items-center gap-3 text-slate-600 hover:text-blue-600">
+          <Link href="/" className="inline-flex items-center gap-3 text-slate-600 hover:text-teal-700">
             <ArrowLeft className="w-5 h-5" />
             Start New Analysis
           </Link>
@@ -151,7 +151,7 @@ export default function LiveReportPage() {
 
         {/* Header */}
         <header className="text-center mb-16">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 px-6 py-3 rounded-2xl text-sm font-semibold mb-8 border border-green-100 shadow-sm">
+          <div className="inline-flex items-center gap-3 bg-teal-50 text-teal-700 px-6 py-3 rounded-2xl text-sm font-semibold mb-8 border border-teal-100 shadow-sm">
             <CheckCircle2 className="w-5 h-5" />
             Analysis Complete
           </div>
@@ -186,7 +186,7 @@ export default function LiveReportPage() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-2xl font-bold text-slate-900 mb-2">{page.title}</h3>
-                        <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all text-sm">
+                        <a href={page.url} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-800 hover:underline break-all text-sm">
                           {page.url} <ExternalLink size={14} className="inline-block ml-1"/>
                         </a>
                       </div>
@@ -230,7 +230,7 @@ export default function LiveReportPage() {
 
         {/* Action Buttons */}
         <div className="text-center space-y-4">
-          <Link href="/" className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors text-lg font-semibold">
+          <Link href="/" className="inline-flex items-center gap-2 btn-atmo text-white px-8 py-4 rounded-xl transition-colors text-lg font-semibold">
             Start New Analysis
           </Link>
           <p className="text-sm text-slate-500">This report is temporary and will not be saved</p>

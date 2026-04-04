@@ -85,7 +85,7 @@ function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJo
               ) : analysisJob.status === 'failed' ? (
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               ) : (
-                <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
+                <Loader2 className="w-5 h-5 text-slate-500 animate-spin flex-shrink-0" />
               )}
               <div>
                 <Badge variant={
@@ -101,7 +101,7 @@ function AnalysisProgressStep({ analysisJob, captureJobId, error }: { analysisJo
             {analysisJob.status === 'completed' && (
               <button
                 onClick={handleViewReport}
-                className="flex items-center justify-center w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all"
+                className="flex items-center justify-center w-full py-3 px-4 btn-atmo text-white font-semibold rounded-lg transition-all"
               >
                 View Your Report
               </button>
@@ -359,10 +359,10 @@ export function AnalysisWizard({ onCancel, initialUrl, projectId }: AnalysisWiza
             <button
               onClick={handleUseSaved}
               disabled={!savedData}
-              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
+              className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-teal-300 hover:bg-teal-50 transition-all text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
             >
-              <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-                <Images className="w-5 h-5 text-blue-600" />
+              <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-teal-50 transition-colors">
+                <Images className="w-5 h-5 text-slate-600" />
               </div>
               <div>
                 <div className="font-semibold text-slate-900">Use saved screenshots</div>

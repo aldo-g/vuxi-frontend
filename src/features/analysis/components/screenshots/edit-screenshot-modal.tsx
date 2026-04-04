@@ -411,7 +411,7 @@ export function EditScreenshotModal({
 
               {/* Capture result */}
               {captureState === 'capturing' && (
-                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700">
+                <div className="flex items-center gap-3 p-4 bg-teal-50 border border-teal-200 rounded-lg text-teal-700">
                   <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
                   <span className="text-sm">Launching browser and capturing page…</span>
                 </div>
@@ -468,7 +468,7 @@ export function EditScreenshotModal({
                   >
                     {isUploading ? (
                       <div className="space-y-2">
-                        <div className="w-10 h-10 mx-auto border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-10 h-10 mx-auto border-4 border-slate-400 border-t-transparent rounded-full animate-spin" />
                         <p className="text-sm text-slate-600">Uploading…</p>
                       </div>
                     ) : (
@@ -507,7 +507,7 @@ export function EditScreenshotModal({
                   >
                     {isUploading ? (
                       <div className="space-y-2">
-                        <div className="w-10 h-10 mx-auto border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-10 h-10 mx-auto border-4 border-slate-400 border-t-transparent rounded-full animate-spin" />
                         <p className="text-sm text-slate-600">Uploading…</p>
                       </div>
                     ) : uploadedImage ? (

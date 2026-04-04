@@ -51,7 +51,7 @@ export function LoginForm() {
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 min-h-[44px] text-slate-600 hover:text-indigo-700 transition-colors duration-200 group"
+            className="inline-flex items-center gap-2 min-h-[44px] text-slate-600 hover:text-teal-700 transition-colors duration-200 group"
           >
             <ArrowLeft size={18} className="transform transition-transform duration-200 group-hover:-translate-x-1" />
             Back to Vuxi Home
@@ -60,7 +60,7 @@ export function LoginForm() {
 
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Vuxi</h1>
-          <p className="text-slate-600">AI-Powered UX Analysis</p>
+          <p className="text-slate-600">AI-Powered Web Analysis</p>
         </div>
 
         <Card className="bg-white shadow-2xl rounded-xl border-slate-200/80">
@@ -94,7 +94,7 @@ export function LoginForm() {
                   placeholder="your@email.com"
                   required 
                   disabled={isLoading}
-                  className="w-full border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className="w-full border-slate-300 shadow-sm focus:ring-teal-400 focus:border-teal-400 sm:text-sm rounded-md"
                 />
               </div>
               
@@ -110,7 +110,7 @@ export function LoginForm() {
                   placeholder="Enter your password"
                   required 
                   disabled={isLoading}
-                  className="w-full border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className="w-full border-slate-300 shadow-sm focus:ring-teal-400 focus:border-teal-400 sm:text-sm rounded-md"
                 />
               </div>
               
@@ -122,7 +122,7 @@ export function LoginForm() {
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-base"
+                className="w-full btn-atmo text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-base"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -162,7 +162,7 @@ export function LoginForm() {
             <div className="w-full text-center">
               <p className="text-sm text-slate-600">
                 Don't have an account?{' '}
-                <Link href="/create-account" className="inline-block min-h-[44px] leading-[44px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors duration-200">
+                <Link href="/create-account" className="inline-block min-h-[44px] leading-[44px] font-medium text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
                   Sign up here
                 </Link>
               </p>

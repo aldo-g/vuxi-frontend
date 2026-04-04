@@ -51,7 +51,7 @@ export function RegisterForm() {
       <div className="absolute top-4 left-4">
         <Link
           href="/"
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 shadow-sm transition-all duration-200"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-500 hover:text-teal-600 hover:border-teal-300 shadow-sm transition-all duration-200"
         >
           <Home size={18} />
         </Link>
@@ -60,7 +60,7 @@ export function RegisterForm() {
       <div className="max-w-md mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Vuxi</h1>
-          <p className="text-slate-600">AI-Powered UX Analysis</p>
+          <p className="text-slate-600">AI-Powered Web Analysis</p>
         </div>
 
         <Card className="bg-white shadow-2xl rounded-xl border-slate-200/80">
@@ -94,7 +94,7 @@ export function RegisterForm() {
                   placeholder="e.g., John Smith"
                   required 
                   disabled={isLoading}
-                  className="w-full border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className="w-full border-slate-300 shadow-sm focus:ring-teal-400 focus:border-teal-400 sm:text-sm rounded-md"
                 />
               </div>
               
@@ -110,7 +110,7 @@ export function RegisterForm() {
                   placeholder="your@email.com"
                   required 
                   disabled={isLoading}
-                  className="w-full border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className="w-full border-slate-300 shadow-sm focus:ring-teal-400 focus:border-teal-400 sm:text-sm rounded-md"
                 />
               </div>
               
@@ -126,7 +126,7 @@ export function RegisterForm() {
                   placeholder="Create a secure password"
                   required 
                   disabled={isLoading}
-                  className="w-full border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  className="w-full border-slate-300 shadow-sm focus:ring-teal-400 focus:border-teal-400 sm:text-sm rounded-md"
                 />
               </div>
               
@@ -138,7 +138,7 @@ export function RegisterForm() {
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-base"
+                className="w-full btn-atmo text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 text-base"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -177,22 +177,22 @@ export function RegisterForm() {
           <CardFooter className="px-6 sm:px-8 py-5 border-t border-slate-200/70 bg-slate-50/30 flex flex-col items-center gap-4">
             <p className="text-sm text-slate-600">
               Already have an account?{' '}
-              <Link href="/login" className="inline-block min-h-[44px] leading-[44px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors duration-200">
+              <Link href="/login" className="inline-block min-h-[44px] leading-[44px] font-medium text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
                 Sign in here
               </Link>
             </p>
             <div className="flex flex-col items-center gap-2 w-full">
-              <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-2">
-                <Gift size={13} className="text-indigo-600 shrink-0" />
-                <span className="text-xs font-semibold text-indigo-700">1 free credit on signup</span>
+              <div className="flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-2">
+                <Gift size={13} className="text-teal-600 shrink-0" />
+                <span className="text-xs font-semibold text-teal-700">1 free credit on signup</span>
               </div>
-              <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-2">
-                <Clock size={13} className="text-indigo-600 shrink-0" />
-                <span className="text-xs font-semibold text-indigo-700">Up & running in minutes</span>
+              <div className="flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-2">
+                <Clock size={13} className="text-teal-600 shrink-0" />
+                <span className="text-xs font-semibold text-teal-700">Up & running in minutes</span>
               </div>
-              <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-2">
-                <Zap size={13} className="text-indigo-600 shrink-0" />
-                <span className="text-xs font-semibold text-indigo-700">No credit card required</span>
+              <div className="flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-full px-4 py-2">
+                <Zap size={13} className="text-teal-600 shrink-0" />
+                <span className="text-xs font-semibold text-teal-700">No credit card required</span>
               </div>
             </div>
           </CardFooter>

@@ -57,7 +57,7 @@ export function NoCreditsDialog({ open, onClose, onRedeemed }: {
             Each analysis costs 1 credit. You currently have none.{' '}
             <a
               href="mailto:alastairegrant@pm.me?subject=Vuxi beta access"
-              className="text-blue-600 hover:underline"
+              className="text-teal-600 hover:underline"
             >
               Email alastairegrant@pm.me
             </a>{' '}

@@ -159,9 +159,9 @@ export function ScreenshotReview({
       </CardHeader>
       <CardContent className="space-y-8">
         {/* Heads-up notice */}
-        <div className="flex gap-3 p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-xl">
-          <AlertCircle className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-indigo-700 leading-relaxed">
+        <div className="flex gap-3 p-4 bg-teal-50/70 border border-teal-100 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-teal-700 leading-relaxed">
             <strong>The more pages the better.</strong> If anything looks incomplete, upload your own screenshots using the &quot;Add new page&quot; button below — a good mix of pages gives the AI a much fuller picture of your site.
           </p>
         </div>
@@ -267,7 +267,7 @@ export function ScreenshotReview({
             onClick={onStartAnalysis}
             disabled={screenshots.length === 0 || isAnalyzing || !organizationName || !primaryGoal}
             title={!organizationName || !primaryGoal ? 'Fill in Organization and Primary goal before starting analysis' : undefined}
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="flex-1 btn-atmo"
           >
             <Zap className="w-4 h-4 mr-2" />
             {isAnalyzing ? 'Starting Analysis...' : 'Start AI Analysis'}

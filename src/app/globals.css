@@ -287,6 +287,11 @@
   display: none;
 }
 
+/* Balanced heading text wrap — prevents orphaned words */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
 /* Atmospheric text gradient — desaturated beige→slate→teal */
 .text-gradient-atmo {
   background: linear-gradient(
@@ -308,4 +313,24 @@
     -webkit-text-fill-color: unset;
     color: CanvasText;
   }
+}
+
+/* Atmospheric CTA button — same palette as text gradient, solid enough for white text */
+.btn-atmo {
+  background: linear-gradient(
+    105deg,
+    hsl(210 22% 32%) 0%,
+    hsl(195 24% 36%) 50%,
+    hsl(185 20% 34%) 100%
+  );
+  color: #fff;
+  border: none;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-atmo:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 14px hsl(195 24% 36% / 0.35);
+}
+.btn-atmo:active {
+  filter: brightness(0.95);
 }

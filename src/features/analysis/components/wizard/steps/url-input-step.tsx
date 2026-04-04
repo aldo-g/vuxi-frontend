@@ -54,7 +54,7 @@ export function UrlInputStep({
         <Button 
           onClick={onNext}
           disabled={!websiteUrl || isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+          className="w-full btn-atmo text-white py-3"
           size="lg"
         >
           {isLoading ? (
@@ -64,7 +64,7 @@ export function UrlInputStep({
             </>
           ) : (
             <>
-              Continue
+              Analyse this URL
               <ArrowRight className="w-5 h-5 ml-2" />
             </>
           )}

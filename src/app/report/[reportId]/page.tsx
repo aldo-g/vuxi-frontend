@@ -112,10 +112,10 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
 };
 
 const getScoreBoxClasses = (score: number): string => {
-  if (score >= 9) return "bg-emerald-100 text-emerald-800 border-emerald-300";
-  if (score >= 7) return "bg-green-100 text-green-800 border-green-300";
-  if (score >= 5) return "bg-yellow-100 text-yellow-800 border-yellow-300";
-  return "bg-red-100 text-red-700 border-red-300";
+  if (score >= 9) return "bg-teal-50 text-teal-800 border-teal-200";
+  if (score >= 7) return "bg-teal-50 text-teal-700 border-teal-200";
+  if (score >= 5) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
 };
 
 const getOverallScoreStatusText = (score: number) => {
@@ -125,17 +125,17 @@ const getOverallScoreStatusText = (score: number) => {
 };
 
 const getProgressColorClass = (score: number): string => {
-  if (score >= 8) return "bg-emerald-500";
-  if (score >= 6) return "bg-green-500";
-  if (score >= 4) return "bg-amber-500";
-  return "bg-red-500";
+  if (score >= 8) return "bg-teal-400";
+  if (score >= 6) return "bg-teal-300";
+  if (score >= 4) return "bg-amber-300";
+  return "bg-rose-300";
 };
 
 const getScoreColorTextClass = (score: number): string => {
-  if (score >= 8) return "text-emerald-600";
-  if (score >= 6) return "text-green-600";
+  if (score >= 8) return "text-teal-700";
+  if (score >= 6) return "text-teal-600";
   if (score >= 4) return "text-amber-600";
-  return "text-red-600";
+  return "text-rose-600";
 };
 
 const extractPageRoleAnalysis = (content: string | undefined): string | null => {
@@ -249,12 +249,12 @@ const MarkdownSectionRenderer: React.FC<{
         {sectionKey === 'key-findings' && (
             <>
                 {goalAchievementAssessment && (
-                    <div className="p-6 bg-indigo-50/70 border border-indigo-200/80 rounded-xl shadow-sm">
+                    <div className="p-6 bg-teal-50/60 border border-teal-100 rounded-xl shadow-sm">
                         <div className="flex items-center gap-3 mb-3">
-                            <TargetIcon className="w-6 h-6 text-indigo-600 flex-shrink-0" />
-                            <h4 className="text-xl font-semibold text-indigo-800">Goal Achievement Assessment</h4>
+                            <TargetIcon className="w-6 h-6 text-slate-600 flex-shrink-0" />
+                            <h4 className="text-xl font-semibold text-slate-800">Goal Achievement Assessment</h4>
                         </div>
-                        <div className="prose prose-base max-w-none text-indigo-700 leading-relaxed">
+                        <div className="prose prose-base max-w-none text-slate-600 leading-relaxed">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{goalAchievementAssessment}</ReactMarkdown>
                         </div>
                     </div>
@@ -269,7 +269,7 @@ const MarkdownSectionRenderer: React.FC<{
                         {/* Screen: collapsible accordion */}
                         <Accordion type="single" collapsible className="w-full print-hide">
                             <AccordionItem value={`subsection-${sectionKey}-${idx}`} className="border bg-white rounded-lg shadow-sm data-[state=open]:shadow-md overflow-hidden">
-                                <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:text-blue-600 py-4 px-6 bg-slate-50/80 hover:bg-slate-100/90 transition-colors w-full text-left data-[state=open]:bg-slate-100 data-[state=open]:border-b border-slate-200">
+                                <AccordionTrigger className="text-lg font-semibold text-slate-700 hover:text-teal-700 py-4 px-6 bg-slate-50/80 hover:bg-slate-100/90 transition-colors w-full text-left data-[state=open]:bg-slate-100 data-[state=open]:border-b border-slate-200">
                                     {sub.title}
                                 </AccordionTrigger>
                                 <AccordionContent className="pt-4 pb-6 px-6">
@@ -293,12 +293,12 @@ const MarkdownSectionRenderer: React.FC<{
             </div>
         )}
         {sectionKey === 'key-findings' && performanceSummary && (
-            <div className="p-6 bg-indigo-50/70 border border-indigo-200/80 rounded-xl shadow-sm mt-6">
+            <div className="p-6 bg-teal-50/60 border border-teal-100 rounded-xl shadow-sm mt-6">
                 <div className="flex items-center gap-3 mb-3">
-                    <Zap className="w-6 h-6 text-indigo-600 flex-shrink-0" />
-                    <h4 className="text-xl font-semibold text-indigo-800">Performance Snapshot</h4>
+                    <Zap className="w-6 h-6 text-slate-600 flex-shrink-0" />
+                    <h4 className="text-xl font-semibold text-slate-800">Performance Snapshot</h4>
                 </div>
-                <p className="text-indigo-700 leading-relaxed text-base">{performanceSummary}</p>
+                <p className="text-slate-600 leading-relaxed text-base">{performanceSummary}</p>
             </div>
         )}
         {(!mainContent || !mainContent.trim()) && (!subsections || subsections.length === 0) && sectionKey !== 'key-findings' && (
@@ -454,9 +454,9 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                     const circumference = 2 * Math.PI * 45;
                     const offset = circumference - ((overallScore / 10) * circumference);
                     scoreRing.style.strokeDashoffset = offset.toString();
-                    if (overallScore >= 8) scoreRing.style.stroke = '#22c55e';
+                    if (overallScore >= 8) scoreRing.style.stroke = '#10b981';
                     else if (overallScore >= 6) scoreRing.style.stroke = '#f59e0b';
-                    else scoreRing.style.stroke = '#ef4444';
+                    else scoreRing.style.stroke = '#f43f5e';
                 }
             }, 100);
             return () => clearTimeout(timer);
@@ -486,11 +486,11 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
     }, [parsedDetailedSections, activeDetailedTab, sectionDetails]);
     
     if (isLoading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
             <div className="flex flex-col items-center gap-6">
                 <div className="relative h-16 w-16">
                     <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-                    <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+                    <div className="absolute inset-0 rounded-full border-4 border-slate-400 border-t-transparent animate-spin" />
                 </div>
                 <div className="text-center space-y-1">
                     <p className="text-lg font-semibold text-slate-800">Loading Report</p>
@@ -526,7 +526,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        <div className="min-h-screen bg-slate-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-10 flex items-center justify-between print-hide">
                     <Link href={user ? "/dashboard" : "/"} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors group">
@@ -542,7 +542,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                     </button>
                 </div>
                 <header className="text-center mb-10">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-2">UX Analysis Report</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-2">Web Analysis Report</p>
                     <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-3 tracking-tight">
                         <span className="text-gradient-atmo">
                             {organizationName}
@@ -570,8 +570,8 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                         <Card className="bg-white rounded-2xl border border-slate-200/70 shadow-lg h-full flex flex-col">
                             <CardHeader className="p-6 sm:p-8 pb-4 border-b border-slate-100">
                                 <CardTitle className="flex items-center gap-3 text-slate-900">
-                                    <div className="h-8 w-8 bg-emerald-50 rounded-xl flex items-center justify-center">
-                                        <Trophy className="w-4 h-4 text-emerald-600" />
+                                    <div className="h-8 w-8 bg-white border-2 border-slate-900 rounded-xl flex items-center justify-center">
+                                        <Trophy className="w-4 h-4 text-slate-900" />
                                     </div>
                                     <span className="text-xl font-semibold">Overall Site Score</span>
                                 </CardTitle>
@@ -622,11 +622,11 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                                 <TabsTrigger
                                                     key={key}
                                                     value={key}
-                                                    className="group flex items-center justify-center sm:justify-start text-center sm:text-left gap-2.5 px-4 py-3 h-auto sm:min-h-[56px] whitespace-nowrap rounded-lg border-2 border-transparent bg-slate-100/80 hover:bg-slate-200/80 data-[state=active]:bg-white data-[state=active]:border-blue-200 data-[state=active]:shadow-md data-[state=active]:text-blue-700 text-slate-600 font-medium transition-all duration-300 flex-shrink-0 text-xs sm:text-sm"
+                                                    className="group flex items-center justify-center sm:justify-start text-center sm:text-left gap-2.5 px-4 py-3 h-auto sm:min-h-[56px] whitespace-nowrap rounded-lg border-2 border-transparent bg-slate-100/80 hover:bg-slate-200/80 data-[state=active]:bg-white data-[state=active]:border-teal-200 data-[state=active]:shadow-md data-[state=active]:text-teal-800 text-slate-600 font-medium transition-all duration-300 flex-shrink-0 text-xs sm:text-sm"
                                                 >
                                                     {Icon && (
-                                                        <div className="flex-shrink-0 w-7 h-7 rounded-md bg-slate-200 group-data-[state=active]:bg-blue-100 flex items-center justify-center transition-colors duration-300">
-                                                            <Icon className="w-3.5 h-3.5 group-data-[state=active]:text-blue-600" />
+                                                        <div className="flex-shrink-0 w-7 h-7 rounded-md bg-slate-200 group-data-[state=active]:bg-teal-50 flex items-center justify-center transition-colors duration-300">
+                                                            <Icon className="w-3.5 h-3.5 group-data-[state=active]:text-teal-800" />
                                                         </div>
                                                     )}
                                                     <span className="font-semibold">
@@ -678,7 +678,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                 <Card className="h-full flex flex-col hover:shadow-xl transition-shadow">
                                     <CardHeader className="p-6 pb-4">
                                         <div className="flex justify-between items-start mb-3">
-                                            <CardTitle className="text-xl font-semibold text-slate-800 group-hover:text-blue-700 transition-colors duration-300">
+                                            <CardTitle className="text-xl font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-300">
                                                 {page.title}
                                             </CardTitle>
                                             <div className={`flex items-center justify-center text-base font-bold p-1.5 px-3 rounded-lg min-w-[40px] h-9 border ${getScoreBoxClasses(page.overall_score)} shadow-sm`}>
@@ -696,7 +696,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                         </p>
                                     </CardContent>
                                     <CardFooter className="p-6 pt-4 mt-auto border-t border-slate-100/90">
-                                        <div className="text-sm font-semibold text-blue-600 group-hover:text-blue-700 flex items-center gap-1.5 transition-colors duration-300">
+                                        <div className="text-sm font-semibold text-teal-600 group-hover:text-teal-800 flex items-center gap-1.5 transition-colors duration-300">
                                             View Detailed Analysis
                                             <ChevronRight className="h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-1" />
                                         </div>
@@ -736,7 +736,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
 
                                 {/* Page Role */}
                                 {pageRole && (
-                                    <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                    <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
                                         <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Page Role & Purpose</h4>
                                         <div className="prose prose-sm max-w-none text-slate-700">
                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{pageRole}</ReactMarkdown>
@@ -786,12 +786,12 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                         <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Key Issues</h4>
                                         <div className="space-y-3">
                                             {page.key_issues.map((issue, idx) => (
-                                                <div key={idx} className="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-                                                    <div className="flex-shrink-0 w-7 h-7 bg-red-500 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
+                                                <div key={idx} className="flex gap-3 p-3 bg-rose-50/50 border border-rose-100 rounded-xl">
+                                                    <div className="flex-shrink-0 w-7 h-7 bg-slate-900 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
                                                     <div className="flex-1">
                                                         <p className="text-slate-900 font-semibold text-sm">{issue.issue}</p>
                                                         {issue.how_to_fix && (
-                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-red-700">Fix:</span> {issue.how_to_fix}</p>
+                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-rose-700">Fix:</span> {issue.how_to_fix}</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -806,12 +806,12 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
                                         <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">Recommendations</h4>
                                         <div className="space-y-3">
                                             {page.recommendations.map((rec, idx) => (
-                                                <div key={idx} className="flex gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                                    <div className="flex-shrink-0 w-7 h-7 bg-emerald-500 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
+                                                <div key={idx} className="flex gap-3 p-3 bg-teal-50/50 border border-teal-100 rounded-xl">
+                                                    <div className="flex-shrink-0 w-7 h-7 bg-teal-700 text-white rounded-lg flex items-center justify-center text-xs font-bold">{idx + 1}</div>
                                                     <div className="flex-1">
                                                         <p className="text-slate-900 font-semibold text-sm">{rec.recommendation}</p>
                                                         {rec.benefit && (
-                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-emerald-700">Benefit:</span> {rec.benefit}</p>
+                                                            <p className="text-slate-600 text-xs mt-1"><span className="font-semibold text-teal-700">Benefit:</span> {rec.benefit}</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -857,7 +857,7 @@ export default function ReportOverviewPage({ params }: { params: { reportId: str
               Describe the issue with this report and we&apos;ll look into it.
             </p>
             <textarea
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-teal-300 mb-4"
               rows={5}
               placeholder="Describe the issue..."
               value={bugMessage}

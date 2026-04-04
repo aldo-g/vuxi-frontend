@@ -13,18 +13,18 @@ export function QuickActions({ userCredits, latestReportId }: { userCredits: num
   const actions = [
     {
       title: "Create New Analysis",
-      description: "Start a comprehensive UX analysis of any website",
+      description: "Start a comprehensive web analysis of any website",
       icon: Plus,
       href: "/create-analysis",
-      color: "bg-blue-600 hover:bg-blue-700",
+      color: "btn-atmo",
       bgColor: "bg-white border-2 border-slate-900"
     },
     {
       title: "Latest Analysis",
-      description: "Quick access to the most recent UX evaluation report",
+      description: "Quick access to your most recent web analysis report",
       icon: TrendingUp,
       href: latestReportId ? `/report/${latestReportId}` : null,
-      color: "border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700",
+      color: "border-teal-200 hover:bg-teal-50 hover:border-teal-300 text-teal-700",
       bgColor: "bg-white border-2 border-slate-900",
       variant: "outline" as const
     }
@@ -68,7 +68,7 @@ export function QuickActions({ userCredits, latestReportId }: { userCredits: num
                 <div className={`w-12 h-12 ${action.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <IconComponent className="h-6 w-6 text-slate-900" />
                 </div>
-                <CardTitle className="text-2xl font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">
+                <CardTitle className="text-2xl font-semibold text-slate-900 group-hover:text-teal-700 transition-colors">
                   {action.title}
                 </CardTitle>
                 <CardDescription className="text-slate-600 text-base">

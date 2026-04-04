@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id                 Int           @id @default(autoincrement())
-  Name               String?
-  email              String        @unique
-  emailVerified      DateTime?
-  image              String?
-  passwordHash       String?
-  credits            Int           @default(0)
-  createdAt          DateTime      @default(now())
-  projects           Project[]
-  redeemedVouchers   VoucherCode[]
-  accounts           Account[]
-  sessions           Session[]
+  id                  Int              @id @default(autoincrement())
+  Name                String?
+  email               String           @unique
+  emailVerified       DateTime?
+  image               String?
+  passwordHash        String?
+  credits             Int              @default(0)
+  createdAt           DateTime         @default(now())
+  surveyCompletedAt   DateTime?
+  projects            Project[]
+  redeemedVouchers    VoucherCode[]
+  accounts            Account[]
+  sessions            Session[]
+  surveyResponse      SurveyResponse?
 }
 
 model Session {
@@ -130,6 +132,25 @@ model AnalysisJob {
   error        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model SurveyResponse {
+  id                       Int      @id @default(autoincrement())
+  userId                   Int      @unique
+  user                     User     @relation(fields: [userId], references: [id])
+  createdAt                DateTime @default(now())
+  previousFeedbackMethods  String[]
+  feedbackFrequency        String?
+  surprisedBy              String?
+  actionability            String?
+  accuracy                 String?
+  role                     String?
+  siteType                 String?
+  alternativeIfGone        String?
+  paidBefore               Boolean?
+  paidForWhat              String?
+  previousCost             String?
+  earlyAccessInterest      String?
 }
 
 // UPDATED: Enhanced Screenshot model to capture payload data

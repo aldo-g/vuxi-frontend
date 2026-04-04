@@ -8,6 +8,7 @@ interface User {
   Name: string;
   email: string;
   credits: number;
+  surveyCompletedAt: string | null;
 }
 
 export function useCurrentUser() {

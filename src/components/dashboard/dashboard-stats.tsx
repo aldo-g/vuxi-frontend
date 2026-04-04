@@ -32,19 +32,19 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       title: "Total Reports",
       value: stats.totalReports.toString(),
       icon: FileText,
-      color: "text-blue-600 bg-blue-100"
+      color: "text-slate-900 bg-white border-2 border-slate-900"
     },
     {
       title: "Last Analysis",
       value: formatLastAnalysis(stats.lastAnalysis),
       icon: Clock,
-      color: "text-orange-600 bg-orange-100"
+      color: "text-slate-900 bg-white border-2 border-slate-900"
     },
     {
       title: "Completed",
       value: stats.completedAnalyses.toString(),
       icon: CheckCircle2,
-      color: "text-emerald-600 bg-emerald-100"
+      color: "text-slate-900 bg-white border-2 border-slate-900"
     },
   ];
 

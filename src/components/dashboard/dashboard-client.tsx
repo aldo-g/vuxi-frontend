@@ -4,10 +4,11 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play, Ticket, Bug, X } from 'lucide-react';
+import { Plus, ExternalLink, Calendar, Trash2, Building2, ChevronDown, ChevronUp, TrendingUp, Play, Ticket, Bug, X, Bell } from 'lucide-react';
 import { FormattedDate } from '@/components/common';
 import { QuickActions, DashboardStats } from '@/components/dashboard';
 import { NoCreditsDialog } from './no-credits-dialog';
+import { PostReportSurveyModal } from './post-report-survey-modal';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import Link from 'next/link';
 
@@ -50,8 +51,8 @@ function getProjectStatus(project: Project): {
   if (hasCompleted) {
     return {
       status: 'Available',
-      icon: <div className="h-3 w-3 rounded-full bg-green-500"></div>,
-      iconColor: 'text-green-500'
+      icon: <div className="h-2 w-2 rounded-full bg-emerald-400"></div>,
+      iconColor: 'text-slate-500'
     };
   }
 
@@ -62,15 +63,15 @@ function getProjectStatus(project: Project): {
     case 'pending':
       return {
         status: 'Pending',
-        icon: <div className="h-3 w-3 rounded-full bg-orange-500"></div>,
-        iconColor: 'text-orange-500'
+        icon: <div className="h-2 w-2 rounded-full bg-amber-400"></div>,
+        iconColor: 'text-slate-500'
       };
     case 'failed':
     case 'error':
       return {
         status: 'Failed',
-        icon: <div className="h-3 w-3 rounded-full bg-red-500"></div>,
-        iconColor: 'text-red-500'
+        icon: <div className="h-2 w-2 rounded-full bg-rose-400"></div>,
+        iconColor: 'text-slate-500'
       };
     default:
       return {
@@ -82,9 +83,9 @@ function getProjectStatus(project: Project): {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 8) return 'text-green-600';
-  if (score >= 6) return 'text-yellow-600';
-  return 'text-red-500';
+  if (score >= 8) return 'text-slate-700';
+  if (score >= 6) return 'text-slate-500';
+  return 'text-slate-400';
 }
 
 function ScoreTrend({ runs }: { runs: AnalysisRun[] }) {
@@ -128,7 +129,7 @@ function RunRow({ run, isLatest, reportHref, onDeleted }: {
           <FormattedDate dateString={run.createdAt} />
         </span>
         {isLatest && (
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Latest</span>
+          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium">Latest</span>
         )}
       </div>
       <div className="flex items-center gap-3">
@@ -275,7 +276,7 @@ function ProjectCard({ project, onDeleted, userCredits }: {
               <Button asChild size="sm" variant="outline" className="h-8 text-xs">
                 <Link href={`/create-analysis?url=${encodeURIComponent(project.baseUrl)}&projectId=${project.id}`}>
                   <Play className="h-3 w-3 mr-1" />
-                  Run Analysis
+                  New Analysis
                 </Link>
               </Button>
             ) : (
@@ -286,7 +287,7 @@ function ProjectCard({ project, onDeleted, userCredits }: {
                 onClick={() => setNoCreditsOpen(true)}
               >
                 <Ticket className="h-3 w-3 mr-1" />
-                Run Analysis
+                New Analysis
               </Button>
             )}
 
@@ -378,22 +379,22 @@ function ProjectCard({ project, onDeleted, userCredits }: {
 
 function CreateProjectCard() {
   return (
-    <Card className="w-full bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01] border-dashed">
+    <Card className="w-full bg-white border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01] border-dashed">
       <CardContent className="flex items-center justify-between p-6">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-100 rounded-full">
-            <Plus className="h-6 w-6 text-blue-600" />
+          <div className="p-3 bg-white border-2 border-slate-900 rounded-xl">
+            <Plus className="h-6 w-6 text-slate-900" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-slate-900">
               Create Your First Analysis
             </h3>
             <p className="text-slate-600 text-sm">
-              Start analyzing any website to gain valuable UX insights and optimization opportunities.
+              Start analysing any website to gain valuable insights and optimization opportunities.
             </p>
           </div>
         </div>
-        <Button asChild className="bg-blue-600 hover:bg-blue-700 shrink-0">
+        <Button asChild className="btn-atmo shrink-0">
           <Link href="/analysis">
             Start Analysis
           </Link>
@@ -409,7 +410,23 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
   const [bugMessage, setBugMessage] = useState("");
   const [bugSending, setBugSending] = useState(false);
   const [bugSent, setBugSent] = useState(false);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+  const [surveyCredits, setSurveyCredits] = useState<number | null>(null);
+  const [surveyDismissed, setSurveyDismissed] = useState(false);
   const { user, loading: userLoading } = useCurrentUser();
+
+  // Show survey after first completed report, if not already done
+  React.useEffect(() => {
+    if (userLoading || !user || surveyDismissed) return;
+    if (user.surveyCompletedAt) return;
+    const totalCompleted = projects.reduce(
+      (acc, p) => acc + (p.analysisRuns?.filter(r => r.status === 'completed').length ?? 0),
+      0
+    );
+    if (totalCompleted >= 1) {
+      setSurveyOpen(true);
+    }
+  }, [user, userLoading, projects, surveyDismissed]);
 
   const handleProjectDeleted = (id: number) => {
     setProjects(prev => prev.filter(p => p.id !== id));
@@ -454,18 +471,43 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
 
   return (
     <>
+    {/* Survey credit banner */}
+    {surveyCredits !== null && (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-slate-900 text-white text-sm font-medium px-5 py-3 rounded-full shadow-xl">
+        <span>+1 credit added — thanks for the feedback!</span>
+        <button onClick={() => setSurveyCredits(null)} className="text-slate-400 hover:text-white transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    )}
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
-        <div className="mb-10">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {projects.length > 0 ? 'Your projects' : 'Get started'}
-          </h1>
-          <p className="text-slate-500 mt-1">
-            {projects.length > 0
-              ? 'Run a new analysis or view your latest report.'
-              : 'Create your first UX analysis to get insights.'}
-          </p>
+        <div className="mb-10 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {projects.length > 0 ? 'Your projects' : 'Get started'}
+            </h1>
+            <p className="text-slate-500 mt-1">
+              {projects.length > 0
+                ? 'Run a new analysis or view your latest report.'
+                : 'Create your first web analysis to get insights.'}
+            </p>
+          </div>
+          {/* Survey notification bell — shown when survey not yet completed */}
+          {!userLoading && user && !user.surveyCompletedAt && !surveyOpen && (
+            <button
+              onClick={() => setSurveyOpen(true)}
+              className="relative flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-lg shadow-sm transition-colors"
+              title="Complete survey to earn a free credit"
+            >
+              <span className="relative">
+                <Bell className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-teal-500 rounded-full" />
+              </span>
+              <span>Earn a free credit</span>
+            </button>
+          )}
         </div>
 
         {/* Stats Section */}
@@ -549,6 +591,16 @@ export function DashboardClient({ projects: initialProjects = [] }: DashboardCli
         <Bug className="w-4 h-4" />
         Report Issue
       </button>
+
+      {/* Post-report survey */}
+      <PostReportSurveyModal
+        open={surveyOpen}
+        onClose={() => { setSurveyOpen(false); setSurveyDismissed(true); }}
+        onCompleted={(newTotal) => {
+          setSurveyOpen(false);
+          setSurveyCredits(newTotal);
+        }}
+      />
 
       {/* Bug Report Modal */}
       {bugReportOpen && (

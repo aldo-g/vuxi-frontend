@@ -160,12 +160,12 @@ function PageGroup({
             if (url.startsWith('http')) window.open(url, '_blank', 'noopener,noreferrer');
           }}
           disabled={!url.startsWith('http')}
-          className={`flex-shrink-0 w-7 h-7 bg-blue-100 rounded-md flex items-center justify-center transition-all ${
-            url.startsWith('http') ? 'hover:bg-blue-200 cursor-pointer' : 'opacity-50 cursor-not-allowed'
+          className={`flex-shrink-0 w-7 h-7 bg-slate-100 rounded-md flex items-center justify-center transition-colors ${
+            url.startsWith('http') ? 'hover:bg-teal-50 cursor-pointer' : 'opacity-50 cursor-not-allowed'
           }`}
           title={url.startsWith('http') ? `Open ${url}` : undefined}
         >
-          <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+          <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
         </button>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-slate-900 text-sm truncate">{pageName}</p>
@@ -177,7 +177,7 @@ function PageGroup({
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all disabled:opacity-40"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all disabled:opacity-40"
               title="Recapture this page"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -271,7 +271,7 @@ function ScreenshotThumb({
     <div className="flex-shrink-0 w-32 group/thumb relative">
       {/* Image */}
       <div
-        className="w-32 aspect-video bg-slate-100 rounded-lg overflow-hidden cursor-pointer relative border border-slate-200 hover:border-blue-400 transition-colors"
+        className="w-32 aspect-video bg-slate-100 rounded-lg overflow-hidden cursor-pointer relative border border-slate-200 hover:border-teal-300 transition-colors"
         onClick={() => onScreenshotClick(index)}
       >
         {imageUrl ? (
@@ -299,7 +299,7 @@ function ScreenshotThumb({
         <div className="flex gap-0.5 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
           <button
             onClick={(e) => { e.stopPropagation(); onEditClick(index); }}
-            className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+            className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all"
             title="Replace screenshot"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

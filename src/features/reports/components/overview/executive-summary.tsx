@@ -24,8 +24,8 @@ export function ExecutiveSummary({ summary, analysisContext }: ExecutiveSummaryP
     <Card className="bg-white rounded-2xl border border-slate-200/70 shadow-lg">
       <CardHeader className="px-6 pt-6 pb-4 border-b border-slate-100">
         <CardTitle className="flex items-center gap-3 text-slate-900">
-          <div className="h-8 w-8 bg-blue-50 rounded-xl flex items-center justify-center">
-            <FileText className="h-4 w-4 text-blue-500" />
+          <div className="h-8 w-8 bg-white border-2 border-slate-900 rounded-xl flex items-center justify-center">
+            <FileText className="h-4 w-4 text-slate-900" />
           </div>
           <span className="text-xl font-semibold">Executive Summary</span>
         </CardTitle>
@@ -41,15 +41,15 @@ export function ExecutiveSummary({ summary, analysisContext }: ExecutiveSummaryP
             </p>
             <div className="flex flex-wrap gap-2">
               {analysisContext.industry && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-medium">
-                  <span className="text-violet-400">Industry</span>
-                  <span className="w-px h-3 bg-violet-200" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                  <span className="text-slate-400">Industry</span>
+                  <span className="w-px h-3 bg-slate-200" />
                   {analysisContext.industry}
                 </span>
               )}
               {analysisContext.targetAudience && analysisContext.targetAudience.split(',').map((a: string, i: number) => (
-                <span key={a.trim()} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
-                  {i === 0 && <><span className="text-blue-400">Audience</span><span className="w-px h-3 bg-blue-200" /></>}
+                <span key={a.trim()} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                  {i === 0 && <><span className="text-slate-400">Audience</span><span className="w-px h-3 bg-slate-200" /></>}
                   {a.trim()}
                 </span>
               ))}

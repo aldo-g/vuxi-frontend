@@ -160,13 +160,10 @@ const fetchReportData = async (reportId: string | undefined): Promise<ReportData
 };
 
 const getScoreBoxClasses = (score: number): string => {
-  if (score >= 9) return "bg-emerald-100 text-emerald-800 border-emerald-300";
-  if (score >= 7) return "bg-green-100 text-green-800 border-green-300";
-  if (score >= 6) return "bg-lime-100 text-lime-800 border-lime-300";
-  if (score >= 5) return "bg-yellow-100 text-yellow-800 border-yellow-300";
-  if (score >= 4) return "bg-orange-100 text-orange-800 border-orange-300";
-  if (score >= 2) return "bg-red-100 text-red-700 border-red-300";
-  return "bg-red-200 text-red-900 border-red-400";
+  if (score >= 9) return "bg-teal-50 text-teal-800 border-teal-200";
+  if (score >= 7) return "bg-teal-50 text-teal-700 border-teal-200";
+  if (score >= 5) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
 };
 
 const getOverallScoreStatusText = (score: number) => {
@@ -176,17 +173,17 @@ const getOverallScoreStatusText = (score: number) => {
 };
 
 const getProgressColorClass = (score: number): string => {
-  if (score >= 8) return "bg-emerald-500";
-  if (score >= 6) return "bg-green-500";
-  if (score >= 4) return "bg-amber-500";
-  return "bg-red-500";
+  if (score >= 8) return "bg-teal-400";
+  if (score >= 6) return "bg-teal-300";
+  if (score >= 4) return "bg-amber-300";
+  return "bg-rose-300";
 };
 
 const getScoreColorTextClass = (score: number): string => {
-  if (score >= 8) return "text-emerald-600";
-  if (score >= 6) return "text-green-600";
+  if (score >= 8) return "text-teal-700";
+  if (score >= 6) return "text-teal-600";
   if (score >= 4) return "text-amber-600";
-  return "text-red-600";
+  return "text-rose-600";
 };
 
 const extractPageRoleAnalysis = (content: string | undefined): string | null => {
@@ -424,7 +421,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
           scoreRing.style.strokeDashoffset = offset.toString();
           if (score >= 8) scoreRing.style.stroke = '#10b981';
           else if (score >= 6) scoreRing.style.stroke = '#f59e0b';
-          else scoreRing.style.stroke = '#ef4444';
+          else scoreRing.style.stroke = '#f43f5e';
         }
       }, 500);
       return () => clearTimeout(timer);
@@ -432,9 +429,9 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
   }, [pageData]);
 
   const getBadgeColors = (tabId: string) => {
-    if (tabId === 'tab-issues') return 'bg-red-100 text-red-700 border-red-200';
-    if (tabId === 'tab-recommendations') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    return 'bg-blue-100 text-blue-700 border-blue-200';
+    if (tabId === 'tab-issues') return 'bg-rose-50 text-rose-700 border-rose-200';
+    if (tabId === 'tab-recommendations') return 'bg-teal-50 text-teal-700 border-teal-200';
+    return 'bg-slate-100 text-slate-600 border-slate-200';
   };
 
   const getDisplayDate = () => {
@@ -451,9 +448,9 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
 
   if (isLoadingReport) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-slate-400 border-dashed rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-xl text-slate-700">Loading Page Analysis...</p>
         </div>
       </div>
@@ -462,15 +459,15 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
 
   if (isReportError || !reportData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100/30">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center p-8 bg-white shadow-xl rounded-2xl max-w-lg">
-          <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <AlertTriangleIcon className="w-10 h-10 text-red-500" />
+          <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <AlertTriangleIcon className="w-10 h-10 text-rose-500" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Error Loading Report Data</h1>
           <p className="text-slate-600 mb-8 text-lg">Could not load data for report ID: {reportId}.</p>
-          {reportError && <pre className="text-xs text-red-700 bg-red-50 p-4 rounded-md text-left mt-4">{reportError.message}</pre>}
-          <Link href="/dashboard" className="mt-8 inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+          {reportError && <pre className="text-xs text-rose-700 bg-rose-50 p-4 rounded-md text-left mt-4">{reportError.message}</pre>}
+          <Link href="/dashboard" className="mt-8 inline-flex items-center gap-2 btn-atmo text-white px-6 py-3 rounded-lg font-semibold transition-colors">
             <ChevronLeft size={18}/> Back to Dashboard
           </Link>
         </div>
@@ -484,7 +481,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
         <div className="text-center">
           <h1 className="text-2xl font-bold">Page Not Found</h1>
           <p>Could not find analysis for page ID "{pageId}" in this report.</p>
-          <Link href={`/report/${reportId}`} className="text-blue-600 mt-4 inline-block">Back to Report Overview</Link>
+          <Link href={`/report/${reportId}`} className="text-teal-600 hover:text-teal-800 mt-4 inline-block">Back to Report Overview</Link>
         </div>
       </div>
     );
@@ -518,7 +515,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
 
   return (
     <>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4 sm:p-8">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-10 print-hide">
           <Link href={`/report/${reportId}`} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors group">
@@ -534,7 +531,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               {pageData.title}
             </span>
           </h1>
-          <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-base text-slate-500 hover:text-blue-600 transition-colors break-all">
+          <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-base text-slate-500 hover:text-teal-600 transition-colors break-all">
             {pageData.url} <ExternalLink size={14} className="inline-block flex-shrink-0"/>
           </a>
         </header>
@@ -559,7 +556,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   </div>
                   <div className="sm:col-span-2">
                     <p className="text-xs text-slate-500 font-medium mb-1">URL</p>
-                    <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-mono text-sm truncate hover:underline break-all" title={pageData.url}>
+                    <a href={pageData.url} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-800 font-mono text-sm truncate hover:underline break-all" title={pageData.url}>
                       {pageData.url} <ExternalLink size={12} className="inline-block ml-1"/>
                     </a>
                   </div>
@@ -603,7 +600,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   {pageData.overall_explanation && (
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <h4 className="text-xs font-semibold text-slate-600 mb-1.5 flex items-center justify-center gap-1.5">
-                        <Info size={14} className="text-blue-500" /> Score Rationale
+                        <Info size={14} className="text-teal-500" /> Score Rationale
                       </h4>
                       <p className="text-xs text-slate-600 leading-relaxed text-center">{pageData.overall_explanation}</p>
                     </div>
@@ -628,7 +625,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="group flex items-center justify-center text-center sm:text-left gap-2 px-4 py-3 h-auto min-h-[52px] whitespace-nowrap rounded-lg border-2 border-transparent bg-slate-100/80 hover:bg-slate-200/80 data-[state=active]:bg-white data-[state=active]:border-blue-200 data-[state=active]:shadow-md data-[state=active]:text-blue-700 text-slate-600 font-medium transition-all duration-300 flex-shrink-0 text-xs sm:text-sm"
+                    className="group flex items-center justify-center text-center sm:text-left gap-2 px-4 py-3 h-auto min-h-[52px] whitespace-nowrap rounded-lg border-2 border-transparent bg-slate-100/80 hover:bg-slate-200/80 data-[state=active]:bg-white data-[state=active]:border-teal-200 data-[state=active]:shadow-md data-[state=active]:text-teal-700 text-slate-600 font-medium transition-all duration-300 flex-shrink-0 text-xs sm:text-sm"
                   >
                     <span className="font-semibold">{tab.label}</span>
                     {typeof tab.count === 'number' && tab.count > 0 && (
@@ -644,9 +641,9 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
             <TabsContent value="tab-detailed" className="p-6 sm:p-8 mt-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none">
               <h3 className="print-tab-heading">Detailed Analysis</h3>
               <div className="space-y-8">
-                <div className="bg-gradient-to-r from-blue-50/60 to-indigo-50/60 rounded-xl border border-blue-100/70 p-6 sm:p-8">
+                <div className="bg-teal-50/60 rounded-xl border border-teal-100 p-6 sm:p-8">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow">
+                    <div className="w-8 h-8 bg-teal-700 rounded-lg flex items-center justify-center shadow">
                       <TargetIcon className="w-4 h-4 text-white" />
                     </div>
                     <h3 className="text-xl font-bold text-slate-900">Page Role & Purpose</h3>
@@ -667,16 +664,16 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                             key={`section-tab-${index}`}
                             onClick={() => setActiveNestedTab(`section-${index}`)}
                             data-state={activeNestedTab === `section-${index}` ? 'active' : 'inactive'}
-                            className={`group flex items-center justify-center text-center sm:text-left gap-2 px-3 py-2.5 h-auto min-h-[48px] whitespace-nowrap rounded-md border-2 border-transparent bg-slate-100/70 hover:bg-slate-200/70 data-[state=active]:bg-white data-[state=active]:border-indigo-200 data-[state=active]:shadow-sm data-[state=active]:text-indigo-700 text-slate-500 font-medium transition-all duration-300 flex-shrink-0 text-xs`}
+                            className={`group flex items-center justify-center text-center sm:text-left gap-2 px-3 py-2.5 h-auto min-h-[48px] whitespace-nowrap rounded-md border-2 border-transparent bg-slate-100/70 hover:bg-slate-200/70 data-[state=active]:bg-white data-[state=active]:border-teal-200 data-[state=active]:shadow-sm data-[state=active]:text-teal-700 text-slate-500 font-medium transition-all duration-300 flex-shrink-0 text-xs`}
                           >
                             <span className={`w-5 h-5 text-xs font-bold rounded-sm flex items-center justify-center text-white ${
-                              section.score >= 7 ? 'bg-emerald-500' : (section.score >= 5 ? 'bg-amber-500' : 'bg-red-500')
+                              section.score >= 7 ? 'bg-teal-400' : (section.score >= 5 ? 'bg-amber-300' : 'bg-rose-300')
                             }`}>
                               {index + 1}
                             </span>
                             <span className="font-medium">{section.title}</span>
                             {typeof section.score === 'number' && (
-                              <span className="text-xs text-slate-400 group-data-[state=active]:text-indigo-500">({section.score}/10)</span>
+                              <span className="text-xs text-slate-400 group-data-[state=active]:text-teal-500">({section.score}/10)</span>
                             )}
                           </button>
                         ))}
@@ -768,15 +765,15 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               <div className="space-y-6">
                 {(pageData.key_issues && pageData.key_issues.length > 0) ? (
                   pageData.key_issues.map((issueObj, index) => (
-                    <div key={index} className="flex gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-r from-red-50/90 to-rose-50/70 border border-red-200/70 rounded-xl hover:shadow-md hover:shadow-red-100/60 transition-all duration-300">
-                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-xl flex items-center justify-center text-sm font-bold shadow-md">
+                    <div key={index} className="flex gap-4 sm:gap-6 p-4 sm:p-6 bg-rose-50/60 border border-rose-100 rounded-xl hover:shadow-md transition-all duration-300">
+                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-rose-600 text-white rounded-xl flex items-center justify-center text-sm font-bold shadow-md">
                         {index + 1}
                       </div>
                       <div className="flex-1">
                         <p className="text-slate-900 font-semibold leading-relaxed text-base sm:text-lg mb-1.5 sm:mb-2">{issueObj.issue}</p>
                         {issueObj.how_to_fix && (
                           <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-red-200/90">
-                            <h4 className="text-xs sm:text-sm font-semibold text-red-700 mb-1">Suggested Fix:</h4>
+                            <h4 className="text-xs sm:text-sm font-semibold text-rose-700 mb-1">Suggested Fix:</h4>
                             <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">{issueObj.how_to_fix}</p>
                           </div>
                         )}
@@ -785,8 +782,8 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   ))
                 ) : (
                   <div className="text-center py-16 sm:py-20">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                      <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-teal-600" />
                     </div>
                     <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">No Critical Issues Identified</h3>
                     <p className="text-slate-600 text-base sm:text-lg">This page appears to be functioning well without major problems according to the analysis.</p>
@@ -800,15 +797,15 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               <div className="space-y-6">
                 {(pageData.recommendations && pageData.recommendations.length > 0) ? (
                   pageData.recommendations.map((recObj, index) => (
-                    <div key={index} className="flex gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-r from-emerald-50/90 to-green-50/70 border border-emerald-200/70 rounded-xl hover:shadow-md hover:shadow-green-100/60 transition-all duration-300">
-                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-xl flex items-center justify-center text-sm font-bold shadow-md">
+                    <div key={index} className="flex gap-4 sm:gap-6 p-4 sm:p-6 bg-teal-50/60 border border-teal-100 rounded-xl hover:shadow-md transition-all duration-300">
+                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center text-sm font-bold shadow-md">
                         {index + 1}
                       </div>
                       <div className="flex-1">
                         <p className="text-slate-900 font-semibold leading-relaxed text-base sm:text-lg mb-1.5 sm:mb-2">{recObj.recommendation}</p>
                         {recObj.benefit && (
                           <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-emerald-200/90">
-                            <h4 className="text-xs sm:text-sm font-semibold text-emerald-700 mb-1">Potential Benefit:</h4>
+                            <h4 className="text-xs sm:text-sm font-semibold text-teal-700 mb-1">Potential Benefit:</h4>
                             <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">{recObj.benefit}</p>
                           </div>
                         )}
@@ -834,7 +831,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                   <p className="text-slate-500 text-sm mb-6">{pageScreenshots.length} capture{pageScreenshots.length !== 1 ? 's' : ''} — click any image to enlarge</p>
                   {/* Expanded inline view */}
                   {lightboxIndex !== null && (
-                    <div className="mb-6 rounded-2xl border-2 border-blue-200 bg-slate-50 shadow-lg overflow-hidden">
+                    <div className="mb-6 rounded-2xl border-2 border-teal-200 bg-slate-50 shadow-lg overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
                         <div className="flex items-center gap-3">
                           {lightboxIndex > 0 && (
@@ -884,7 +881,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
                         <button
                           key={shot.filename}
                           onClick={() => setLightboxIndex(isActive ? null : i)}
-                          className={`group relative rounded-xl overflow-hidden border-2 shadow transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 ${isActive ? 'border-blue-500 shadow-blue-200' : 'border-slate-200 hover:shadow-lg hover:border-blue-400'}`}
+                          className={`group relative rounded-xl overflow-hidden border-2 shadow transition-all focus:outline-none focus:ring-2 focus:ring-teal-400 bg-slate-50 ${isActive ? 'border-teal-400 shadow-teal-100' : 'border-slate-200 hover:shadow-lg hover:border-teal-300'}`}
                         >
                           <img
                             src={shot.src}
@@ -945,7 +942,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
               Describe the issue with this report and we&apos;ll look into it.
             </p>
             <textarea
-              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-teal-300 mb-4"
               rows={5}
               placeholder="Describe the issue..."
               value={bugMessage}

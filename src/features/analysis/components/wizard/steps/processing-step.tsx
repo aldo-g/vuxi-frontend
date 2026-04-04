@@ -111,7 +111,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
                   ) : captureJob.status === 'failed' ? (
                     <AlertCircle className="w-5 h-5 text-red-600" />
                   ) : (
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-slate-500 animate-spin" />
                   )}
                   <Badge variant={
                     captureJob.status === 'completed' ? 'default' :
@@ -141,7 +141,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
                       onClick={() => setShowUploader(true)}
                       variant="outline"
                       size="sm"
-                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                      className="border-teal-300 text-teal-700 hover:bg-teal-50"
                     >
                       <ImagePlus className="w-4 h-4 mr-1.5" />
                       Upload Screenshots Manually
@@ -159,7 +159,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
               <Button
                 onClick={onNext}
                 disabled={captureJob.status !== 'completed'}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 btn-atmo"
               >
                 {captureJob.status === 'completed' ? (
                   <>
@@ -181,7 +181,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
           <>
             {/* Drop zone / file picker */}
             <div
-              className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+              className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-teal-300 hover:bg-teal-50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
@@ -225,7 +225,7 @@ export function ProcessingStep({ captureJob, onNext, onBack, error, onManualUplo
               <Button
                 onClick={handleProceedWithUploads}
                 disabled={uploadedFiles.length === 0}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 btn-atmo"
               >
                 Continue with {uploadedFiles.length > 0 ? uploadedFiles.length : ''} Screenshot{uploadedFiles.length !== 1 ? 's' : ''}
                 <ArrowRight className="w-4 h-4 ml-2" />

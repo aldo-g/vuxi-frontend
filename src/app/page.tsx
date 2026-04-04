@@ -129,7 +129,7 @@ function VuxiLandingPage() {
               <Link href="/create-account">
                 <Button
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="btn-atmo"
                 >
                   Get Started <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -151,7 +151,7 @@ function VuxiLandingPage() {
                     ))
                   ) : reports.map((report) => (
                     <Link key={report.id} href={`/report/${report.id}`} className="group">
-                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 hover:scale-[1.02]">
+                      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-teal-300 transition-all duration-300 hover:scale-[1.02]">
                         {/* Screenshot */}
                         <div className="aspect-square w-full bg-slate-100 overflow-hidden relative">
                           {report.preview_screenshot ? (
@@ -177,9 +177,9 @@ function VuxiLandingPage() {
                         {/* Footer */}
                         <div className="px-4 py-3 flex items-center justify-between">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors truncate">{report.name}</p>
+                            <p className="text-sm font-semibold text-slate-900 group-hover:text-teal-700 transition-colors truncate">{report.name}</p>
                           </div>
-                          <ChevronRight className="ml-2 h-4 w-4 text-slate-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                          <ChevronRight className="ml-2 h-4 w-4 text-slate-300 group-hover:text-teal-500 transition-colors flex-shrink-0" />
                         </div>
                       </div>
                     </Link>
@@ -192,7 +192,7 @@ function VuxiLandingPage() {
         {/* Beta CTA Section */}
         <section className="w-full py-20 md:py-28 bg-white border-t">
           <div className="max-w-2xl mx-auto px-4 md:px-6 text-center">
-            <span className="inline-block bg-blue-600 text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-6">
+            <span className="inline-block btn-atmo text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-6">
               Beta
             </span>
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-slate-900 mb-4">
@@ -202,7 +202,7 @@ function VuxiLandingPage() {
               Vuxi is free to try during the beta. Sign up and get a free credit to run your first analysis — no payment required.
             </p>
             <Link href="/create-account">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Button size="lg" className="btn-atmo">
                 Try it free <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>

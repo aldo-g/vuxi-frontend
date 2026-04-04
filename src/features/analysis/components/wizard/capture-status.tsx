@@ -50,8 +50,8 @@ export const CaptureStatus = memo(function CaptureStatus({
 
   if (!['completed', 'failed'].includes(captureJob.status)) {
     return (
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-center gap-2 text-blue-700 text-sm">
+      <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+        <div className="flex items-center gap-2 text-teal-700 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           <span>Website analysis running in background...</span>
           <Badge variant="secondary" className="text-xs">

@@ -21,8 +21,8 @@ import { Providers, ErrorBoundary } from "@/components/common";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Vuxi - AI-Powered UX Analysis",
-  description: "Professional UX analysis powered by AI",
+  title: "Vuxi - AI-Powered Web Analysis",
+  description: "Professional web analysis powered by AI",
 };
 
 export default function RootLayout({
