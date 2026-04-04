@@ -6,7 +6,10 @@ import type { AnalysisData } from '../types';
 const initialAnalysisData: AnalysisData = {
   websiteUrl: '',
   organizationName: '',
-  sitePurpose: ''
+  sitePurpose: '',
+  targetAudience: '',
+  primaryGoal: '',
+  industry: '',
 };
 
 export function useAnalysisData() {

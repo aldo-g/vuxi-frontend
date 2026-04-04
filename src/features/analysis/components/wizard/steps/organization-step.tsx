@@ -25,7 +25,7 @@ export function OrganizationStep({
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight">Organization Details</CardTitle>
         <p className="text-slate-600 mt-2">
-          Tell us about the organization whose website we're analyzing.
+          Tell us about the organization whose website we&apos;re analyzing.
         </p>
         
         <CaptureStatus captureJob={captureJob} captureStarted={captureStarted} />

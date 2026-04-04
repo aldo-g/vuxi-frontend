@@ -233,7 +233,7 @@ export function PostReportSurveyModal({ open, onClose, onCompleted }: PostReport
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-800">
-                  Did the report identify anything you're actually going to do something about?
+                  Did the report identify anything you&apos;re actually going to do something about?
                 </Label>
                 <div className="space-y-2">
                   {ACTIONABILITY_OPTIONS.map(opt => (
@@ -406,7 +406,7 @@ export function PostReportSurveyModal({ open, onClose, onCompleted }: PostReport
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-800">
-                  We're planning paid early access. Interested?
+                  We&apos;re planning paid early access. Interested?
                 </Label>
                 <div className="space-y-2">
                   {EARLY_ACCESS_OPTIONS.map(opt => (

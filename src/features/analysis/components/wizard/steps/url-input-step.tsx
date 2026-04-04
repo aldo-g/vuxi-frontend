@@ -23,7 +23,7 @@ export function UrlInputStep({
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight">Enter Website URL</CardTitle>
         <p className="text-slate-600 mt-2">
-          Which website would you like to analyze? We'll start capturing data while you provide additional details.
+          Which website would you like to analyze? We&apos;ll start capturing data while you provide additional details.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">

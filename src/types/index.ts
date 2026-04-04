@@ -174,6 +174,15 @@ export interface ReportData {
   page_analyses: PageAnalysisDetail[];
   metadata: ReportMetadata;
   screenshots?: { [key: string]: string };
+  organization?: string;
+  timestamp?: string;
+  analysis_date?: string;
+  project?: {
+    industry?: string;
+    primaryGoal?: string;
+    targetAudience?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ReportMetadata {

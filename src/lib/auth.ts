@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { AdapterUser } from "@auth/core/adapters";
 import * as jose from "jose";
 import prisma from "@/lib/database";
 
@@ -8,9 +9,9 @@ const baseAdapter = PrismaAdapter(prisma);
 
 const adapter = {
   ...baseAdapter,
-  createUser: ({ name, ...data }: Parameters<typeof baseAdapter.createUser>[0]) =>
+  createUser: ({ name, ...data }: AdapterUser) =>
     (baseAdapter.createUser as Function)({ ...data, Name: name ?? null }),
-  updateUser: ({ name, ...data }: Parameters<typeof baseAdapter.updateUser>[0]) =>
+  updateUser: ({ name, ...data }: Partial<AdapterUser> & Pick<AdapterUser, "id">) =>
     (baseAdapter.updateUser as Function)({ ...data, ...(name !== undefined && { Name: name }) }),
 };
 

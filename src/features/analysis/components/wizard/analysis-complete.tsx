@@ -27,7 +27,7 @@ export function AnalysisComplete({ onRestart }: AnalysisCompleteProps) {
             Your Web Analysis Report is Ready
           </h3>
           <p className="text-green-700 mb-4">
-            We've generated a comprehensive analysis of your website's user experience, 
+            We&apos;ve generated a comprehensive analysis of your website&apos;s user experience,
             including actionable recommendations for improvement.
           </p>
           <Button 

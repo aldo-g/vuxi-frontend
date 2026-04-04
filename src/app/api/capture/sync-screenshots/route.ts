@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      for (const [url, pageScreenshots] of byUrl) {
+      for (const [url, pageScreenshots] of Array.from(byUrl)) {
         if (existingUrls.has(url)) {
           // URL already tracked — replace all screenshots to reflect user edits (deletions + additions)
           const page = run.analyzedPages.find((p) => p.url === url)!;

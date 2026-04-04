@@ -134,6 +134,9 @@ export function ScreenshotReview({
             websiteUrl: screenshots[0]?.url || '',
             organizationName: 'Current Analysis',
             sitePurpose: 'Website analysis',
+            targetAudience: '',
+            primaryGoal: '',
+            industry: '',
             screenshots
           }} />
         </div>

@@ -480,7 +480,7 @@ export default function PageAnalysisPage({ params }: { params: { reportId: strin
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Page Not Found</h1>
-          <p>Could not find analysis for page ID "{pageId}" in this report.</p>
+          <p>Could not find analysis for page ID &quot;{pageId}&quot; in this report.</p>
           <Link href={`/report/${reportId}`} className="text-teal-600 hover:text-teal-800 mt-4 inline-block">Back to Report Overview</Link>
         </div>
       </div>

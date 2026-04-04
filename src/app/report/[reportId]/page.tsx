@@ -72,6 +72,9 @@ interface ReportMetadata {
   organization_name?: string;
   generated_at?: string;
   total_pages?: number;
+  industry?: string;
+  primary_goal?: string;
+  target_audience?: string;
 }
 interface ReportData {
   organization: string;
@@ -80,6 +83,12 @@ interface ReportData {
   overall_summary: OverallSummary;
   page_analyses: PageAnalysisDetail[];
   metadata?: ReportMetadata;
+  project?: {
+    industry?: string;
+    primaryGoal?: string;
+    targetAudience?: string;
+    [key: string]: unknown;
+  };
 }
 
 // --- Helper Functions from original Index.tsx ---

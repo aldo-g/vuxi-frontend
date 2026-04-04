@@ -161,7 +161,7 @@ export function LoginForm() {
           <CardFooter className="p-6 sm:p-8 border-t border-slate-200/70 bg-slate-50/30">
             <div className="w-full text-center">
               <p className="text-sm text-slate-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/create-account" className="inline-block min-h-[44px] leading-[44px] font-medium text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
                   Sign up here
                 </Link>

@@ -121,7 +121,7 @@ export class CaptureService {
 
         console.log(`📄 Unique pages: ${screenshotsByUrl.size}`);
 
-        for (const [url, pageScreenshots] of screenshotsByUrl) {
+        for (const [url, pageScreenshots] of Array.from(screenshotsByUrl)) {
           // One AnalyzedPage per unique URL
           const analyzedPage = await tx.analyzedPage.create({
             data: {
@@ -141,7 +141,7 @@ export class CaptureService {
                 url: screenshot.url,
                 filename: screenshot.data!.filename || null,
                 storageUrl: screenshot.data!.storageUrl || screenshot.data!.path || screenshot.data!.filename || '',
-                success: screenshot.success,
+                success: true,
                 viewport: 'desktop',
                 duration_ms: null,
                 timestamp: screenshot.data!.timestamp ? new Date(screenshot.data!.timestamp as string) : null,
