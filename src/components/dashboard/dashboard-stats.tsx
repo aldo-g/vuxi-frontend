@@ -7,15 +7,15 @@ interface DashboardStatsProps {
   stats: {
     totalReports: number;
     avgScore: number;
-    lastAnalysis?: string;
+    lastAnalysis?: string | Date;
     completedAnalyses: number;
   };
 }
 
-function formatLastAnalysis(value?: string): string {
+function formatLastAnalysis(value?: string | Date): string {
   if (!value) return "None";
   const date = new Date(value);
-  if (isNaN(date.getTime())) return value;
+  if (isNaN(date.getTime())) return String(value);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
   const yesterday = new Date(now);

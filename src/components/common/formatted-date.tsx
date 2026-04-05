@@ -18,7 +18,7 @@
 import { useState, useEffect } from 'react';
 
 interface FormattedDateProps {
-  dateString: string;
+  dateString: string | Date;
   format?: 'short' | 'long' | 'medium';
 }
 
