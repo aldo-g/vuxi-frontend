@@ -1,59 +1,45 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import * as jose from 'jose';
 import { MainLayout } from "@/components/layout";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import prisma from '@/lib/database';
 
-interface Project {
-  id: number;
-  name: string;
-  baseUrl: string;
-  orgName?: string;
-  orgPurpose?: string;
-  createdAt: string;
-  analysisRuns?: Array<{
-    id: number;
-    status: string;
-    overallScore?: number;
-    createdAt: string;
-  }>;
-}
-
-async function checkAuth() {
+async function getUserProjects() {
   const cookieStore = cookies();
   const token = cookieStore.get('token')?.value;
 
   if (!token) {
     redirect('/login');
   }
-  
-  return token;
-}
 
-async function fetchUserProjects(token: string): Promise<Project[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/projects`, {
-      headers: {
-        'Cookie': `token=${token}`,
-      },
-      cache: 'no-store', // Always fetch fresh data
-    });
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+    const { payload } = await jose.jwtVerify(token, secret);
 
-    if (!response.ok) {
-      console.error('Failed to fetch projects:', response.status);
-      return [];
+    if (!payload.userId) {
+      redirect('/login');
     }
 
-    const projects = await response.json();
+    const projects = await prisma.project.findMany({
+      where: { userId: payload.userId as number },
+      include: {
+        analysisRuns: {
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, status: true, overallScore: true, createdAt: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
     return projects;
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-    return [];
+  } catch {
+    redirect('/login');
   }
 }
 
 export default async function DashboardPage() {
-  const token = await checkAuth();
-  const projects = await fetchUserProjects(token);
+  const projects = await getUserProjects();
 
   return (
     <MainLayout title="Dashboard">
