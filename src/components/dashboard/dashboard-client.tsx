@@ -15,17 +15,17 @@ import Link from 'next/link';
 interface AnalysisRun {
   id: number;
   status: string;
-  overallScore?: number;
-  createdAt: string;
+  overallScore?: number | null;
+  createdAt: string | Date;
 }
 
 interface Project {
   id: number;
   name: string;
   baseUrl: string;
-  orgName?: string;
-  orgPurpose?: string;
-  createdAt: string;
+  orgName?: string | null;
+  orgPurpose?: string | null;
+  createdAt: string | Date;
   analysisRuns?: AnalysisRun[];
 }
 
